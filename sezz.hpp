@@ -49,7 +49,17 @@ template<typename T, typename = void>
 struct is_iterable_t : std::false_type {};
 template<typename T>
 struct is_iterable_t<T, std::void_t<decltype(std::begin(std::declval<T>())), decltype(std::end(std::declval<T>()))>> : std::true_type {};
+
+/*
+* 判断是否是用户自定义类
+*/
+template<typename T, typename = void>
+struct is_user_t : std::false_type {};
+template<typename T>
+struct is_user_t<T, std::void_t<decltype(&T::Serialize)>> : std::true_type {};
 } // namespace details
+
+
 
 template <class>
 constexpr bool always_false = false;
@@ -72,6 +82,9 @@ constexpr bool is_pair_v = details::is_pair_t<T>::value;
 /* 判断是否是std::vector(value版) */
 template <class T>
 constexpr bool is_vector_v = details::is_vector_t<T>::value;
+/* 判断是否是user(value版) */
+template <class T>
+constexpr bool is_user_v = details::is_user_t<T>::value;
 
 template <class T>
 void Serialize(std::ostream& os, T& val) {
@@ -87,11 +100,17 @@ void Serialize(std::ostream& os, T& val) {
             os.write((const char*)&val, size * sizeof(typename T::value_type));
         }
         else {
-            for (auto& v : val) { Serialize(os, v); }
+            for (auto& v : val) { 
+                Serialize(os, v); 
+            }
         }
     }
     else if constexpr (is_memcopyable_v<T>) {
         os.write((const char*)&val, sizeof(T));
+    }
+    else if constexpr (is_user_v<T>) {
+        // 这里应该支持解包多参数
+        Serialize(os, val);
     }
     else {
         //printf("无法解析的T类型: %s\n", typeid(T).name()); throw;
@@ -155,6 +174,9 @@ T Deserialize(std::istream& is) {
     /* 如果是可直接内存复制的类型 */
     else if constexpr (is_memcopyable_v<T>) {
         is.read((char*)&res, sizeof(T));
+    }
+    else if constexpr (is_user_v<T>) {
+
     }
     else {
         //printf("无法解析的T类型: %s\n", typeid(T).name()); throw;
