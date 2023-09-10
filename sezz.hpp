@@ -109,8 +109,7 @@ void Serialize(std::ostream& os, T& val) {
         os.write((const char*)&val, sizeof(T));
     }
     else if constexpr (is_user_v<T>) {
-        // 这里应该支持解包多参数
-        Serialize(os, val);
+        val.Serialize(os);
     }
     else {
         //printf("无法解析的T类型: %s\n", typeid(T).name()); throw;
