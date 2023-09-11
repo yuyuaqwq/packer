@@ -2,6 +2,7 @@
 C++对象的序列化与反序列化支持
 
 # 特性
+- header-only
 - 支持STL常用容器
 - 支持自定义类
 - 支持std::unique_ptr
