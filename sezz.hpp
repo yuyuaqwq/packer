@@ -16,6 +16,13 @@
 * 2.计都
 */
 
+/*
+* 对原始指针和其他智能指针的支持构思
+* 需要引入运行时哈希表
+* 在序列化时如果发现时原始指针/std::shared_ptr/weak_ptr，则判断在之前是否以及序列化过了(std::unique_ptr/std::shared_ptr)，是则序列化一个编号(不是实际值)
+* 在反序列化时，如果是原始指针/std::shared_ptr，则基于编号索引先前反序列化时再次构造的表(在反序列化std::unique_ptr/std::shared_ptr是会构建)，使其指向同一份数据
+*/
+
 namespace sezz {
 
 namespace details {
@@ -43,7 +50,6 @@ struct is_vector_t : std::false_type {};
 template<typename T>
 struct is_vector_t<std::vector<T>> : std::true_type {};
 
-
 /* 判断是否可迭代(type版) */
 template<typename T, typename = void>
 struct is_iterable_t : std::false_type {};
@@ -51,15 +57,26 @@ template<typename T>
 struct is_iterable_t<T, std::void_t<decltype(std::begin(std::declval<T>())), decltype(std::end(std::declval<T>()))>> : std::true_type {};
 
 /*
+* 判断是否是智能指针
+*/
+template<typename T, typename = void>
+struct is_unique_ptr_t : std::false_type {};
+template<typename T>
+struct is_unique_ptr_t<T, std::void_t<decltype(&T::operator->), decltype(&T::operator*)>> : std::true_type {};
+
+/*
 * 判断是否是用户自定义类
 */
 template<typename T, typename = void>
-struct is_user_t : std::false_type {};
+struct is_user_serializable_t : std::false_type {};
 template<typename T>
-struct is_user_t<T, std::void_t<decltype(&T::Serialize)>> : std::true_type {};
+struct is_user_serializable_t<T, std::void_t<decltype(&T::Serialize)>> : std::true_type {};
+
+template<typename T, typename = void>
+struct is_user_deserializable_t : std::false_type {};
+template<typename T>
+struct is_user_deserializable_t<T, std::void_t<decltype(&T::Deserialize)>> : std::true_type {};
 } // namespace details
-
-
 
 template <class>
 constexpr bool always_false = false;
@@ -82,15 +99,26 @@ constexpr bool is_pair_v = details::is_pair_t<T>::value;
 /* 判断是否是std::vector(value版) */
 template <class T>
 constexpr bool is_vector_v = details::is_vector_t<T>::value;
-/* 判断是否是user(value版) */
+/* 判断是否是std::unique_ptr(value版) */
 template <class T>
-constexpr bool is_user_v = details::is_user_t<T>::value;
+constexpr bool is_unique_ptr_v = details::is_unique_ptr_t<T>::value;
+/* 判断是否是user定义对象(value版) */
+template <class T>
+constexpr bool is_user_serializable_v = details::is_user_serializable_t<T>::value;
+template <class T>
+constexpr bool is_user_deserializable_v = details::is_user_deserializable_t<T>::value;
 
-void Serialize(std::ostream& os) { }
 template <class T, class... Types>
-void Serialize(std::ostream& os, T& val, Types... args) {
+void Serialize(std::ostream& os, T& val, Types&... args) {
     using DecayT = std::decay_t<T>;
-    if constexpr (is_pair_v<DecayT>) {
+    if constexpr (std::is_pointer_v<DecayT>) {
+        // Serialize(os, *val, args...);
+        static_assert(always_false<T>, "Serializing raw pointers is not supported!");
+    }
+    else if constexpr (is_unique_ptr_v<DecayT>) {
+        Serialize(os, *val, args...);
+    }
+    else if constexpr (is_pair_v<DecayT>) {
         Serialize(os, val.first);
         Serialize(os, val.second);
     }
@@ -109,16 +137,17 @@ void Serialize(std::ostream& os, T& val, Types... args) {
     else if constexpr (is_memcopyable_v<T>) {
         os.write((const char*)&val, sizeof(T));
     }
-    else if constexpr (is_user_v<T>) {
+    else if constexpr (is_user_serializable_v<T>) {
         val.Serialize(os);
     }
     else {
         //printf("无法解析的T类型: %s\n", typeid(T).name()); throw;
         static_assert(always_false<T>, "无法解析的T类型!");
     }
-    Serialize(os, args...);
+    if constexpr (sizeof...(args) > 0) {
+        Serialize(os, args...);
+    }
 }
-
 
 template <class T>
 T Deserialize(std::istream& is) {
@@ -126,9 +155,18 @@ T Deserialize(std::istream& is) {
 
     unsigned int size = 0;
     DecayT res{};
-
     /* 如果是std::pair类型 */
-    if constexpr (is_pair_v<DecayT>) {
+    if constexpr (std::is_pointer_v<DecayT>) {
+        //res = new std::remove_pointer_t<DecayT>{ Deserialize<std::remove_pointer_t<DecayT>>(is) };
+        // 不支持原始指针的原因是，需要通过new构造一个对象
+        // 但在现代cpp中，原始指针代表的是引用一个在其生命周期内的对象，若使用者未注意就会造成内存泄漏
+        static_assert(always_false<T>, "Deserializing raw pointers is not supported!");
+    }
+    else if constexpr (is_unique_ptr_v<DecayT>) {
+        using DecayRawT = std::decay_t<decltype(*res)>;
+        res = std::make_unique<DecayRawT>(Deserialize<DecayRawT>(is));
+    }
+    else if constexpr (is_pair_v<DecayT>) {
         auto first = Deserialize<typename T::first_type>(is);        // 反序列化first
         auto second = Deserialize<typename T::second_type>(is);      // 反序列化second
         ::new(&res) T(first, second);                                // 重构std::pair
@@ -176,8 +214,8 @@ T Deserialize(std::istream& is) {
     else if constexpr (is_memcopyable_v<T>) {
         is.read((char*)&res, sizeof(T));
     }
-    else if constexpr (is_user_v<T>) {
-
+    else if constexpr (is_user_deserializable_v<T>) {
+        res.Deserialize(is);
     }
     else {
         //printf("无法解析的T类型: %s\n", typeid(T).name()); throw;
@@ -187,12 +225,14 @@ T Deserialize(std::istream& is) {
 }
 
 template <class T, class... Types>
-void Deserialize(std::ostream& os, T& val, Types... args) {
-
+void Deserialize(std::istream& is, T& val, Types&... args) {
+    val = Deserialize<T>(is);
+    if constexpr (sizeof...(args) > 0) {
+        Deserialize(is, args...);
+    }
 }
 
 } // namespace sezz
-
 
 
 #endif // SEZZ_SEZZ_HPP_
