@@ -2,7 +2,6 @@
 #define SEZZ_SEZZ_HPP_
 
 #include <iostream>
-#include <fstream>
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
@@ -105,7 +104,10 @@ constexpr bool is_user_deserializable_v = details::is_user_deserializable_t<T>::
 template <class T, class... Types>
 void Serialize(std::ostream& os, T& val, Types&... args) {
     using DecayT = std::decay_t<T>;
-    if constexpr (std::is_pointer_v<DecayT>) {
+    if constexpr (is_user_serializable_v<T>) {
+        val.Serialize(os);
+    }
+    else if constexpr (std::is_pointer_v<DecayT>) {
         // Serialize(os, *val, args...);
         static_assert(always_false<T>, "Serializing raw pointers is not supported!");
     }
@@ -131,9 +133,6 @@ void Serialize(std::ostream& os, T& val, Types&... args) {
     else if constexpr (is_memcopyable_v<T>) {
         os.write((const char*)&val, sizeof(T));
     }
-    else if constexpr (is_user_serializable_v<T>) {
-        val.Serialize(os);
-    }
     else {
         //printf("无法解析的T类型: %s\n", typeid(T).name()); throw;
         static_assert(always_false<T>, "无法解析的T类型!");
@@ -149,17 +148,20 @@ T Deserialize(std::istream& is) {
 
     unsigned int size = 0;
     DecayT res{};
-    /* 如果是std::pair类型 */
-    if constexpr (std::is_pointer_v<DecayT>) {
+    if constexpr (is_user_deserializable_v<T>) {
+        res.Deserialize(is);
+    }
+    else if constexpr (std::is_pointer_v<DecayT>) {
         //res = new std::remove_pointer_t<DecayT>{ Deserialize<std::remove_pointer_t<DecayT>>(is) };
         // 不支持原始指针的原因是，需要通过new构造一个对象
         // 但在现代cpp中，原始指针代表的是引用一个在其生命周期内的对象，若使用者未注意就会造成内存泄漏
         static_assert(always_false<T>, "Deserializing raw pointers is not supported!");
     }
     else if constexpr (is_unique_ptr_v<DecayT>) {
-        using DecayRawT = std::decay_t<decltype(*res)>;
+        using DecayRawT = std::decay_t<DecayT::element_type>;
         res = std::make_unique<DecayRawT>(Deserialize<DecayRawT>(is));
     }
+    /* 如果是std::pair类型 */
     else if constexpr (is_pair_v<DecayT>) {
         auto first = Deserialize<typename T::first_type>(is);        // 反序列化first
         auto second = Deserialize<typename T::second_type>(is);      // 反序列化second
@@ -207,9 +209,6 @@ T Deserialize(std::istream& is) {
     /* 如果是可直接内存复制的类型 */
     else if constexpr (is_memcopyable_v<T>) {
         is.read((char*)&res, sizeof(T));
-    }
-    else if constexpr (is_user_deserializable_v<T>) {
-        res.Deserialize(is);
     }
     else {
         //printf("无法解析的T类型: %s\n", typeid(T).name()); throw;
