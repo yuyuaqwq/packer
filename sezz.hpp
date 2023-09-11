@@ -86,8 +86,9 @@ constexpr bool is_vector_v = details::is_vector_t<T>::value;
 template <class T>
 constexpr bool is_user_v = details::is_user_t<T>::value;
 
-template <class T>
-void Serialize(std::ostream& os, T& val) {
+void Serialize(std::ostream& os) { }
+template <class T, class... Types>
+void Serialize(std::ostream& os, T& val, Types... args) {
     using DecayT = std::decay_t<T>;
     if constexpr (is_pair_v<DecayT>) {
         Serialize(os, val.first);
@@ -115,6 +116,7 @@ void Serialize(std::ostream& os, T& val) {
         //printf("无法解析的T类型: %s\n", typeid(T).name()); throw;
         static_assert(always_false<T>, "无法解析的T类型!");
     }
+    Serialize(os, args...);
 }
 
 
@@ -184,7 +186,10 @@ T Deserialize(std::istream& is) {
     return res;
 }
 
+template <class T, class... Types>
+void Deserialize(std::ostream& os, T& val, Types... args) {
 
+}
 
 } // namespace sezz
 

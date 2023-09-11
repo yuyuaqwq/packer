@@ -27,12 +27,13 @@ int main()
     /*std::string str = "???";
     sezz::Serialize(f, str);*/
 
-    // std::vector<std::string> fake2 = { "adawwd", "dawwdwa", "csac" };
+    std::vector<std::string> fake2 = { "adawwd", "dawwdwa", "csac" };
+    std::vector<std::string> fake3 = { "daccs", "2e12", "zCc" };
 
     User user;
     sezz::is_user_v<User>;
 
-    sezz::Serialize(f, user);
+    sezz::Serialize(f, fake2, fake3);
 
 
     f.close();
@@ -42,5 +43,6 @@ int main()
 
     // auto v = sezz::Deserialize<std::unordered_map<std::string, std::string>>(f);
     auto v = sezz::Deserialize<std::vector<std::string>>(f);
+    auto v2 = sezz::Deserialize<std::vector<std::string>>(f);
     std::cout << "Hello World!\n";
 }
