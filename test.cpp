@@ -1,5 +1,6 @@
 #include <sezz/sezz.hpp>
 
+#include <fstream>
 
 class User {
 public:
