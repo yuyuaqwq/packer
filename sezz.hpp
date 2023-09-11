@@ -13,7 +13,7 @@
 /*
 * 对原始指针和其他智能指针的支持构思
 * 需要引入运行时哈希表
-* 在序列化时如果发现时原始指针/std::shared_ptr/weak_ptr，则判断在之前是否以及序列化过了(std::unique_ptr/std::shared_ptr)，是则序列化一个编号(不是实际值)
+* 在序列化时如果发现是原始指针/std::shared_ptr/weak_ptr，则判断在之前是否以及序列化过了(std::unique_ptr/std::shared_ptr)，是则序列化一个编号(不是实际值)
 * 在反序列化时，如果是原始指针/std::shared_ptr，则基于编号索引先前反序列化时再次构造的表(在反序列化std::unique_ptr/std::shared_ptr是会构建)，使其指向同一份数据
 */
 
