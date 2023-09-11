@@ -11,12 +11,6 @@
 #include <typeinfo>
 
 /*
-* 鸣谢：
-* 1.https://www.cnblogs.com/mmc1206x/p/11053826.html
-* 2.计都
-*/
-
-/*
 * 对原始指针和其他智能指针的支持构思
 * 需要引入运行时哈希表
 * 在序列化时如果发现时原始指针/std::shared_ptr/weak_ptr，则判断在之前是否以及序列化过了(std::unique_ptr/std::shared_ptr)，是则序列化一个编号(不是实际值)
