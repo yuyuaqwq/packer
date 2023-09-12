@@ -51,6 +51,10 @@ int main()
     //sezz::is_user_deserializable_v<User>;
 
     //sezz::Serialize(f, user);
+    std::unordered_set<std::string> set_ = { "dad" };
+    sezz::Serialize(f, set_);
+    sezz::Serialize(f, fake3);
+
 
 
     f.close();
@@ -62,11 +66,11 @@ int main()
     //int* intv2 = 0;
     //std::vector<std::string> dese1, dese2;
     //auto user2 = sezz::Deserialize<User>(f);
-    
+
 
     auto ptr = sezz::Deserialize<std::unique_ptr<int>>(f);
 
-    auto v = sezz::Deserialize<std::vector<std::string>>(f);
+    auto v = sezz::Deserialize<std::unordered_set<std::string>>(f);
     auto v2 = sezz::Deserialize<std::vector<std::string>>(f);
 
     std::cout << "Hello World!\n";
