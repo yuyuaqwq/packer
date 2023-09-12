@@ -17,8 +17,12 @@ public:
     int aaa;
 };
 
+#define aaa
+
+
 int main()
 {
+    int a = 010;
     std::fstream f;
 
     f.open("qqq.txt", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
