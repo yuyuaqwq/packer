@@ -1,6 +1,9 @@
 #include <sezz/sezz.hpp>
 
+#include <thread>
+#include <Geek/ring_queue.hpp>
 
+#include <vector>
 class User {
 public:
     void Serialize(std::ostream& os) {
@@ -11,8 +14,42 @@ public:
     std::string str;
 };
 
+template<typename T, typename = void>
+struct is_aaa_t : std::false_type {};
+template<typename T>
+struct is_aaa_t<T, std::void_t<decltype(&T::Serialize)>> : std::true_type {};
+
+
+
 int main()
 {
+    //xxxxx<int>;
+    uint32_t* buf = new uint32_t[1024];
+    RingQueue<uint32_t> queue(buf, 1024);
+    clock_t start, end;
+    start = clock();
+    
+
+    std::thread enqueue([&]() {
+        for (int i = 0; i < 10000000; i++) {
+            queue.Enqueue(100);
+        }
+    });
+
+    std::thread dequeue([&]() {
+        uint32_t a;
+        for (int i = 0; i < 10000000; i++) {
+            queue.Dequeue(&a);
+        }
+    });
+
+    enqueue.join();
+    dequeue.join();
+
+    end = clock();
+
+    std::cout << "F1运行时间" << (double)(end - start) << "ms" << std::endl;
+
     std::fstream f;
 
     f.open("qqq.txt", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
