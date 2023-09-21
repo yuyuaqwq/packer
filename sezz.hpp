@@ -2,14 +2,19 @@
 #define SEZZ_SEZZ_HPP_
 
 #include <iostream>
+#include <typeinfo>
 #include <map>
 #include <unordered_map>
 #include <set>
 #include <unordered_set>
 #include <string>
 #include <vector>
-#include <typeinfo>
 
+
+
+namespace sezz {
+
+namespace details {
 /*
 * 对原始指针和其他智能指针的支持构思
 * 需要引入运行时哈希表
@@ -17,70 +22,62 @@
 * 在反序列化时，如果是原始指针/std::shared_ptr，则基于编号索引先前反序列化时再次构造的表(在反序列化std::unique_ptr/std::shared_ptr是会构建)，使其指向同一份数据
 */
 
-namespace sezz {
 
-namespace details {
-/* 判断是否是std::pair(type版) */
+// std::pair
 template<typename T>
 struct is_pair_t : std::false_type {};
 template<typename T1, typename T2>
 struct is_pair_t<std::pair<T1, T2>> : std::true_type {};
 
-
-/* 判断是否是std::map(type版) */
+// std::map
 template<typename T>
 struct is_map_t : std::false_type {};
 template<typename T1, typename T2>
 struct is_map_t<std::map<T1, T2>> : std::true_type {};
 
-/* 判断是否是std::unordered_map(type版) */
+// std::unordered_map
 template<typename T>
 struct is_unordered_map_t : std::false_type {};
 template<typename T1, typename T2>
 struct is_unordered_map_t<std::unordered_map<T1, T2>> : std::true_type {};
 
-/* 判断是否是std::set(type版) */
+// std::set
 template<typename T>
 struct is_set_t : std::false_type {};
 template<typename T1, typename T2>
 struct is_set_t<std::set<T1, T2>> : std::true_type {};
 
-/* 判断是否是std::unordered_set(type版) */
+// std::unordered_set
 template<typename T>
 struct is_unordered_set_t : std::false_type {};
 template<typename T1, typename T2>
 struct is_unordered_set_t<std::unordered_set<T1, T2>> : std::true_type {};
 
-
-/* 判断是否是std::basic_string(type版) */
+// std::basic_string
 template<typename T>
 struct is_string_t : std::false_type {};
 template<typename T>
 struct is_string_t<std::basic_string<T>> : std::true_type {};
 
-/* 判断是否是std::vector */
+// std::vector
 template<typename T>
 struct is_vector_t : std::false_type {};
 template<typename T>
 struct is_vector_t<std::vector<T>> : std::true_type {};
 
-/* 判断是否可迭代(type版) */
+// 可迭代
 template<typename T, typename = void>
 struct is_iterable_t : std::false_type {};
 template<typename T>
 struct is_iterable_t<T, std::void_t<decltype(std::begin(std::declval<T>())), decltype(std::end(std::declval<T>()))>> : std::true_type {};
 
-/*
-* 判断是否是智能指针
-*/
+// 智能指针
 template<typename T, typename = void>
 struct is_unique_ptr_t : std::false_type {};
 template<typename T>
 struct is_unique_ptr_t<T, std::void_t<decltype(&T::operator->), decltype(&T::operator*)>> : std::true_type {};
 
-/*
-* 判断是否是用户自定义类
-*/
+// 用户自定义类
 template<typename T, typename = void>
 struct is_user_serializable_t : std::false_type {};
 template<typename T>
@@ -92,38 +89,37 @@ template<typename T>
 struct is_user_deserializable_t<T, std::void_t<decltype(&T::Deserialize)>> : std::true_type {};
 
 
-/* 判断是否可memcopy(value版) */
+// 可memcopy
 template <class T>
 constexpr bool is_memcopyable_v = std::is_trivially_copyable_v<T>;
-/* 判断是否可迭代(value版) */
+// 可迭代
 template <class T>
 constexpr bool is_iterable_v = details::is_iterable_t<T>::value;
-/* 判断是否是std::unordered_map(value版) */
+// std::unordered_map
 template <class T>
 constexpr bool is_unordered_map_v = details::is_unordered_map_t<T>::value;
-/* 判断是否是std::map(value版) */
+// std::map
 template <class T>
 constexpr bool is_map_v = details::is_map_t<T>::value;
-/* 判断是否是std::unordered_set(value版) */
+// std::unordered_set
 template <class T>
 constexpr bool is_unordered_set_v = details::is_unordered_set_t<T>::value;
-/* 判断是否是std::set(value版) */
+// std::set
 template <class T>
 constexpr bool is_set_v = details::is_set_t<T>::value;
-
-/* 判断是否是std::string(value版) */
+// std::string
 template <class T>
 constexpr bool is_string_v = details::is_string_t<T>::value;
-/* 判断是否是std::pair(value版) */
+// std::pair
 template <class T>
 constexpr bool is_pair_v = details::is_pair_t<T>::value;
-/* 判断是否是std::vector(value版) */
+// std::vector
 template <class T>
 constexpr bool is_vector_v = details::is_vector_t<T>::value;
-/* 判断是否是std::unique_ptr(value版) */
+// std::unique_ptr
 template <class T>
 constexpr bool is_unique_ptr_v = details::is_unique_ptr_t<T>::value;
-/* 判断是否是user定义对象(value版) */
+// 用户自定义类
 template <class T>
 constexpr bool is_user_serializable_v = details::is_user_serializable_t<T>::value;
 template <class T>
@@ -134,8 +130,6 @@ constexpr bool always_false = false;
 
 
 } // namespace details
-
-
 
 
 template <class T, class... Types>
@@ -198,15 +192,15 @@ T Deserialize(std::istream& is) {
         using DecayRawT = std::decay_t<DecayT::element_type>;
         res = std::make_unique<DecayRawT>(Deserialize<DecayRawT>(is));
     }
-    /* 如果是std::pair类型 */
+    // std::pair
     else if constexpr (details::is_pair_v<DecayT>) {
         auto first = Deserialize<typename T::first_type>(is);        // 反序列化first
         auto second = Deserialize<typename T::second_type>(is);      // 反序列化second
         ::new(&res) T(first, second);                                // 重构std::pair
     }
-    /* 如果是可迭代的容器类型 */
+    // 可迭代的容器类型
     else if constexpr (details::is_iterable_v<DecayT>) {
-        /* 如果是可直接内存复制的容器类型, 比如std::vector<char> */
+        // 可直接内存复制的容器类型, 比如std::vector<char>
         if constexpr (details::is_memcopyable_v<DecayT>) {
             is.read((char*)&size, sizeof(unsigned int));
             res.resize(size);
@@ -224,26 +218,25 @@ T Deserialize(std::istream& is) {
             }
             for (unsigned int i = 0; i < size; i++) {
                 auto tmp = Deserialize<typename T::value_type>(is);     // 反序列化T的元素, 比如std::string
-                /* 如果是std::basic_string */
+                // std::basic_string
                 if constexpr (details::is_string_v<DecayT>) {
                     res.insert(i, 1, std::move(tmp));
                 }
-                /* 如果是std::unordered_map || std::map || std::unordered_set || std::set */
+                // std::unordered_map || std::map || std::unordered_set || std::set
                 else if constexpr (details::is_unordered_map_v<DecayT> || details::is_map_v<DecayT> || details::is_unordered_set_v<DecayT> || details::is_set_v<DecayT>) {
                     res.insert(std::move(tmp));
                 }
                 else if constexpr (details::is_vector_v<DecayT>) {
                     res[i] = std::move(tmp);
                 }
-                /* 剩下的交给你了! 注释的printf是可以在运行时查看还有什么类型没实现 */
                 else {
-                    //printf("unrealized container: %s\n", typeid(DecayT).name()); throw;
+                    //printf("unrealized container: %s\n", typeid(DecayT).name()); throw;       // 运行时查看未实现的类型
                     static_assert(details::always_false<T>, "unrealized container.");
                 }
             }
         }
     }
-    /* 如果是可直接内存复制的类型 */
+    // 可直接内存复制的类型
     else if constexpr (details::is_memcopyable_v<T>) {
         is.read((char*)&res, sizeof(T));
     }
