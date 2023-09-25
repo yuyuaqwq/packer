@@ -14,7 +14,7 @@
 
 namespace sezz {
 
-namespace details {
+namespace internal {
 /*
 * 对原始指针和其他智能指针的支持构思
 * 需要引入运行时哈希表
@@ -79,14 +79,14 @@ struct is_unique_ptr_t<T, std::void_t<decltype(&T::operator->), decltype(&T::ope
 
 // 用户自定义类
 template<typename T, typename = void>
-struct is_user_serializable_t : std::false_type {};
+struct is_user_class_serializable_t : std::false_type {};
 template<typename T>
-struct is_user_serializable_t<T, std::void_t<decltype(&T::Serialize)>> : std::true_type {};
+struct is_user_class_serializable_t<T, std::void_t<decltype(&T::Serialize)>> : std::true_type {};
 
 template<typename T, typename = void>
-struct is_user_deserializable_t : std::false_type {};
+struct is_user_class_deserializable_t : std::false_type {};
 template<typename T>
-struct is_user_deserializable_t<T, std::void_t<decltype(&T::Deserialize)>> : std::true_type {};
+struct is_user_class_deserializable_t<T, std::void_t<decltype(&T::Deserialize)>> : std::true_type {};
 
 
 // 可memcopy
@@ -94,65 +94,65 @@ template <class T>
 constexpr bool is_memcopyable_v = std::is_trivially_copyable_v<T>;
 // 可迭代
 template <class T>
-constexpr bool is_iterable_v = details::is_iterable_t<T>::value;
+constexpr bool is_iterable_v = internal::is_iterable_t<T>::value;
 // std::unordered_map
 template <class T>
-constexpr bool is_unordered_map_v = details::is_unordered_map_t<T>::value;
+constexpr bool is_unordered_map_v = internal::is_unordered_map_t<T>::value;
 // std::map
 template <class T>
-constexpr bool is_map_v = details::is_map_t<T>::value;
+constexpr bool is_map_v = internal::is_map_t<T>::value;
 // std::unordered_set
 template <class T>
-constexpr bool is_unordered_set_v = details::is_unordered_set_t<T>::value;
+constexpr bool is_unordered_set_v = internal::is_unordered_set_t<T>::value;
 // std::set
 template <class T>
-constexpr bool is_set_v = details::is_set_t<T>::value;
+constexpr bool is_set_v = internal::is_set_t<T>::value;
 // std::string
 template <class T>
-constexpr bool is_string_v = details::is_string_t<T>::value;
+constexpr bool is_string_v = internal::is_string_t<T>::value;
 // std::pair
 template <class T>
-constexpr bool is_pair_v = details::is_pair_t<T>::value;
+constexpr bool is_pair_v = internal::is_pair_t<T>::value;
 // std::vector
 template <class T>
-constexpr bool is_vector_v = details::is_vector_t<T>::value;
+constexpr bool is_vector_v = internal::is_vector_t<T>::value;
 // std::unique_ptr
 template <class T>
-constexpr bool is_unique_ptr_v = details::is_unique_ptr_t<T>::value;
+constexpr bool is_unique_ptr_v = internal::is_unique_ptr_t<T>::value;
 // 用户自定义类
 template <class T>
-constexpr bool is_user_serializable_v = details::is_user_serializable_t<T>::value;
+constexpr bool is_user_class_serializable_v = internal::is_user_class_serializable_t<T>::value;
 template <class T>
-constexpr bool is_user_deserializable_v = details::is_user_deserializable_t<T>::value;
+constexpr bool is_user_class_deserializable_v = internal::is_user_class_deserializable_t<T>::value;
 
 template <class>
 constexpr bool always_false = false;
 
 
-} // namespace details
+} // namespace internal
 
 
 template <class T, class... Types>
 void Serialize(std::ostream& os, T& val, Types&... args) {
     using DecayT = std::decay_t<T>;
-    if constexpr (details::is_user_serializable_v<T>) {
+    if constexpr (internal::is_user_class_serializable_v<T>) {
         val.Serialize(os);
     }
     else if constexpr (std::is_pointer_v<DecayT>) {
         // Serialize(os, *val, args...);
-        static_assert(details::always_false<T>, "Serializing raw pointers is not supported!");
+        static_assert(internal::always_false<T>, "Serializing raw pointers is not supported!");
     }
-    else if constexpr (details::is_unique_ptr_v<DecayT>) {
+    else if constexpr (internal::is_unique_ptr_v<DecayT>) {
         Serialize(os, *val, args...);
     }
-    else if constexpr (details::is_pair_v<DecayT>) {
+    else if constexpr (internal::is_pair_v<DecayT>) {
         Serialize(os, val.first);
         Serialize(os, val.second);
     }
-    else if constexpr (details::is_iterable_v<DecayT>) {
+    else if constexpr (internal::is_iterable_v<DecayT>) {
         unsigned int size = val.size();
         os.write((const char*)&size, sizeof(size));
-        if constexpr (details::is_memcopyable_v<DecayT>) {
+        if constexpr (internal::is_memcopyable_v<DecayT>) {
             os.write((const char*)&val, size * sizeof(typename T::value_type));
         }
         else {
@@ -161,12 +161,12 @@ void Serialize(std::ostream& os, T& val, Types&... args) {
             }
         }
     }
-    else if constexpr (details::is_memcopyable_v<T>) {
+    else if constexpr (internal::is_memcopyable_v<T>) {
         os.write((const char*)&val, sizeof(T));
     }
     else {
-        //printf("types that cannot be serialized: %s\n", typeid(T).name()); throw;
-        static_assert(details::always_false<T>, "types that cannot be serialized.");
+        printf("types that cannot be serialized: %s\n", typeid(T).name()); throw;
+        //static_assert(internal::always_false<T>, "types that cannot be serialized.");
     }
     if constexpr (sizeof...(args) > 0) {
         Serialize(os, args...);
@@ -179,29 +179,29 @@ T Deserialize(std::istream& is) {
 
     unsigned int size = 0;
     DecayT res{};
-    if constexpr (details::is_user_deserializable_v<T>) {
+    if constexpr (internal::is_user_class_deserializable_v<T>) {
         res.Deserialize(is);
     }
     else if constexpr (std::is_pointer_v<DecayT>) {
         //res = new std::remove_pointer_t<DecayT>{ Deserialize<std::remove_pointer_t<DecayT>>(is) };
         // 不支持原始指针的原因是，需要通过new构造一个对象
         // 但在现代cpp中，原始指针代表的是引用一个在其生命周期内的对象，若使用者未注意就会造成内存泄漏
-        static_assert(details::always_false<T>, "Deserializing raw pointers is not supported!");
+        static_assert(internal::always_false<T>, "Deserializing raw pointers is not supported!");
     }
-    else if constexpr (details::is_unique_ptr_v<DecayT>) {
+    else if constexpr (internal::is_unique_ptr_v<DecayT>) {
         using DecayRawT = std::decay_t<DecayT::element_type>;
         res = std::make_unique<DecayRawT>(Deserialize<DecayRawT>(is));
     }
     // std::pair
-    else if constexpr (details::is_pair_v<DecayT>) {
+    else if constexpr (internal::is_pair_v<DecayT>) {
         auto first = Deserialize<typename T::first_type>(is);        // 反序列化first
         auto second = Deserialize<typename T::second_type>(is);      // 反序列化second
         ::new(&res) T(first, second);                                // 重构std::pair
     }
     // 可迭代的容器类型
-    else if constexpr (details::is_iterable_v<DecayT>) {
+    else if constexpr (internal::is_iterable_v<DecayT>) {
         // 可直接内存复制的容器类型, 比如std::vector<char>
-        if constexpr (details::is_memcopyable_v<DecayT>) {
+        if constexpr (internal::is_memcopyable_v<DecayT>) {
             is.read((char*)&size, sizeof(unsigned int));
             res.resize(size);
             is.read((char*)res.data(), size * sizeof(typename T::value_type));
@@ -213,36 +213,36 @@ T Deserialize(std::istream& is) {
         */
         else {
             is.read((char*)&size, sizeof(unsigned int));
-            if constexpr (details::is_vector_v<DecayT>) {
+            if constexpr (internal::is_vector_v<DecayT>) {
                 res.resize(size);
             }
             for (unsigned int i = 0; i < size; i++) {
                 auto tmp = Deserialize<typename T::value_type>(is);     // 反序列化T的元素, 比如std::string
                 // std::basic_string
-                if constexpr (details::is_string_v<DecayT>) {
+                if constexpr (internal::is_string_v<DecayT>) {
                     res.insert(i, 1, std::move(tmp));
                 }
                 // std::unordered_map || std::map || std::unordered_set || std::set
-                else if constexpr (details::is_unordered_map_v<DecayT> || details::is_map_v<DecayT> || details::is_unordered_set_v<DecayT> || details::is_set_v<DecayT>) {
+                else if constexpr (internal::is_unordered_map_v<DecayT> || internal::is_map_v<DecayT> || internal::is_unordered_set_v<DecayT> || internal::is_set_v<DecayT>) {
                     res.insert(std::move(tmp));
                 }
-                else if constexpr (details::is_vector_v<DecayT>) {
+                else if constexpr (internal::is_vector_v<DecayT>) {
                     res[i] = std::move(tmp);
                 }
                 else {
                     //printf("unrealized container: %s\n", typeid(DecayT).name()); throw;       // 运行时查看未实现的类型
-                    static_assert(details::always_false<T>, "unrealized container.");
+                    static_assert(internal::always_false<T>, "unrealized container.");
                 }
             }
         }
     }
     // 可直接内存复制的类型
-    else if constexpr (details::is_memcopyable_v<T>) {
+    else if constexpr (internal::is_memcopyable_v<T>) {
         is.read((char*)&res, sizeof(T));
     }
     else {
         //printf("types that cannot be deserialized: %s\n", typeid(T).name()); throw;
-        static_assert(details::always_false<T>, "types that cannot be deserialized.");
+        static_assert(internal::always_false<T>, "types that cannot be deserialized.");
     }
     return res;
 }
