@@ -12,7 +12,5 @@ C++对象的序列化与反序列化魔法
 # 鸣谢
 1. [C++序列化对象 ](https://www.cnblogs.com/mmc1206x/p/11053826.html)
 
-2. [C++访问私有成员变量](https://zhuanlan.zhihu.com/p/627884224)
-
 3. [计都](https://github.com/fuyouawa)
 

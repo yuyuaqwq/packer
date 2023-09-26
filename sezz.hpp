@@ -3,6 +3,7 @@
 
 
 #ifndef SEZZ_STD
+
 #include <iostream>
 #include <typeinfo>
 #include <map>
@@ -14,55 +15,35 @@
 #include <optional>
 
 #define SEZZ_STD std::
+
 #endif
 
 namespace sezz {
 
-namespace exposer {
-template <class MemberType> struct Exposer {
-    static MemberType memberPtr;
-};
-template <class MemberType> MemberType Exposer<MemberType>::memberPtr;
-
-template <class MemberType, MemberType MemberPtr> struct ExposerImpl {
-    static struct ExposerFactory {
-        ExposerFactory() { Exposer<MemberType>::memberPtr = MemberPtr; }
-    } factory;
-};
-template <class MemberType, MemberType Ptr>
-typename ExposerImpl<MemberType, Ptr>::ExposerFactory
-    ExposerImpl<MemberType, Ptr>::factory;
-} // namespace exposer
-
-//#define SEZZ_ACCESS(ClassName, AttrName, AttrType)                               \
-//    template struct exposer::ExposerImpl<decltype(&ClassName::AttrName), &ClassName::AttrName>; \
-//    AttrType &get_##AttrName##_from_##ClassName(ClassName &T) {                  \
-//        return T.*exposer::Exposer<AttrType ClassName::*>::memberPtr;            \
-//    }
-
 namespace internal {
 /*
-* 对原始指针和其他智能指针的支持构思
-* 需要引入运行时哈希表
+* 如何支持原始指针和其他智能指针
+* 引入运行时哈希表
 * 在序列化时如果发现是原始指针/shared_ptr/weak_ptr，则判断在之前是否以及序列化过了(unique_ptr/shared_ptr)，是则序列化一个编号(不是实际值)
 * 在反序列化时，如果是原始指针/shared_ptr，则基于编号索引先前反序列化时再次构造的表(在反序列化unique_ptr/shared_ptr是会构建)，使其指向同一份数据
 */
 
+// Type
 
-// SEZZ_STD pair
+// pair
 template<typename T>
 struct is_pair_t : SEZZ_STD false_type {};
 template<typename T1, typename T2>
 struct is_pair_t<SEZZ_STD pair<T1, T2>> : SEZZ_STD true_type {};
 
 
-// SEZZ_STD optional
+// optional
 template<typename T>
 struct is_optional_t : SEZZ_STD false_type {};
 template<typename T>
 struct is_optional_t<SEZZ_STD optional<T>> : SEZZ_STD true_type {};
 
-// SEZZ_STD map
+// map
 template<typename T>
 struct is_map_t : SEZZ_STD false_type {};
 template<typename T1, typename T2>
@@ -70,94 +51,102 @@ struct is_map_t<SEZZ_STD map<T1, T2>> : SEZZ_STD true_type {};
 template<typename T1, typename T2, typename T3>
 struct is_map_t<SEZZ_STD map<T1, T2, T3>> : SEZZ_STD true_type {};
 
-// SEZZ_STD unordered_map
+// unordered_map
 template<typename T>
 struct is_unordered_map_t : SEZZ_STD false_type {};
 template<typename T1, typename T2>
 struct is_unordered_map_t<SEZZ_STD unordered_map<T1, T2>> : SEZZ_STD true_type {};
 
-// SEZZ_STD set
+// set
 template<typename T>
 struct is_set_t : SEZZ_STD false_type {};
 template<typename T1, typename T2>
 struct is_set_t<SEZZ_STD set<T1, T2>> : SEZZ_STD true_type {};
 
-// SEZZ_STD unordered_set
+// unordered_set
 template<typename T>
 struct is_unordered_set_t : SEZZ_STD false_type {};
 template<typename T1, typename T2>
 struct is_unordered_set_t<SEZZ_STD unordered_set<T1, T2>> : SEZZ_STD true_type {};
 
-// SEZZ_STD basic_string
+// basic_string
 template<typename T>
 struct is_string_t : SEZZ_STD false_type {};
 template<typename T>
 struct is_string_t<SEZZ_STD basic_string<T>> : SEZZ_STD true_type {};
 
-// SEZZ_STD vector
+// vector
 template<typename T>
 struct is_vector_t : SEZZ_STD false_type {};
 template<typename T>
 struct is_vector_t<SEZZ_STD vector<T>> : SEZZ_STD true_type {};
 
-// 可迭代
+// iterative
 template<typename T, typename = void>
 struct is_iterable_t : SEZZ_STD false_type {};
 template<typename T>
 struct is_iterable_t<T, SEZZ_STD void_t<decltype(SEZZ_STD begin(SEZZ_STD declval<T>())), decltype(SEZZ_STD end(SEZZ_STD declval<T>()))>> : SEZZ_STD true_type {};
 
-// 智能指针
+// unique_ptr
 template<typename T, typename = void>
 struct is_unique_ptr_t : SEZZ_STD false_type {};
 template<typename T>
 struct is_unique_ptr_t<T, SEZZ_STD void_t<decltype(&T::operator->), decltype(&T::operator*)>> : SEZZ_STD true_type {};
 
-// 用户自定义类
+// serializable class
 template<typename T, typename = void>
 struct is_user_class_serializable_t : SEZZ_STD false_type {};
 template<typename T>
 struct is_user_class_serializable_t<T, SEZZ_STD void_t<decltype(&T::Serialize)>> : SEZZ_STD true_type {};
 
-template<typename T, typename = void>
-struct is_user_class_deserializable_t : SEZZ_STD false_type {};
-template<typename T>
-struct is_user_class_deserializable_t<T, SEZZ_STD void_t<decltype(&T::Deserialize)>> : SEZZ_STD true_type {};
 
+// Value
 
-// SEZZ_STD pair
+// pair
 template <class T>
 constexpr bool is_pair_v = internal::is_pair_t<T>::value;
-// SEZZ_STD optional
+
+// optional
 template <class T>
 constexpr bool is_optional_v = internal::is_optional_t<T>::value;
-// 可memcopy
+
+// memory copyable
 template <class T>
 constexpr bool is_memcopyable_v = SEZZ_STD is_trivially_copyable_v<T>;
-// 可迭代
+
+// iterative
 template <class T>
 constexpr bool is_iterable_v = internal::is_iterable_t<T>::value;
-// SEZZ_STD unordered_map
+
+// unordered_map
 template <class T>
 constexpr bool is_unordered_map_v = internal::is_unordered_map_t<T>::value;
-// SEZZ_STD map
+
+// map
 template <class T>
 constexpr bool is_map_v = internal::is_map_t<T>::value;
-// SEZZ_STD unordered_set
+
+// unordered_set
 template <class T>
 constexpr bool is_unordered_set_v = internal::is_unordered_set_t<T>::value;
-// SEZZ_STD set
+
+// set
 template <class T>
 constexpr bool is_set_v = internal::is_set_t<T>::value;
-// SEZZ_STD string
+
+// string
 template <class T>
 constexpr bool is_string_v = internal::is_string_t<T>::value;
-// SEZZ_STD vector
+
+// vector
 template <class T>
 constexpr bool is_vector_v = internal::is_vector_t<T>::value;
-// SEZZ_STD unique_ptr
+
+// unique_ptr
 template <class T>
 constexpr bool is_unique_ptr_v = internal::is_unique_ptr_t<T>::value;
-// 用户自定义类
+
+// serializable class
 template <class T>
 constexpr bool is_user_class_serializable_v = internal::is_user_class_serializable_t<T>::value;
 template <class T>
@@ -258,9 +247,9 @@ T Deserialize(SEZZ_STD istream& is) {
             is.read((char*)res.data(), size * sizeof(typename T::value_type));
         }
         /*
-        不可直接内存复制的容器类型
-        比如vector<string>
-        string不可直接内存复制
+        * 不可直接内存复制的容器类型
+        * 比如vector<string>
+        * string不可直接内存复制
         */
         else {
             is.read((char*)&size, sizeof(uint32_t));
