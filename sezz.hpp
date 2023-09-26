@@ -99,6 +99,11 @@ struct is_user_class_serializable_t : SEZZ_STD false_type {};
 template<typename T>
 struct is_user_class_serializable_t<T, SEZZ_STD void_t<decltype(&T::Serialize)>> : SEZZ_STD true_type {};
 
+template<typename T, typename = void>
+struct is_user_class_deserializable_t : SEZZ_STD false_type {};
+template<typename T>
+struct is_user_class_deserializable_t<T, SEZZ_STD void_t<decltype(&T::Deserialize)>> : SEZZ_STD true_type {};
+
 
 // Value
 
