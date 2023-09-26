@@ -6,104 +6,103 @@
 #include <fstream>
 
 #include <vector>
-class User {
+class Invasive {
 public:
+    Invasive() :str_() {        // Default constructor required
+        int_ = 0;
+    }
+
+    Invasive(std::string_view str, int _int) :str_(str), int_(_int) {
+
+    }
+
+    ~Invasive() {
+
+    }
+
     void Serialize(std::ostream& os) {
-        sezz::Serialize(os, str, aaa);
+        sezz::Serialize(os, str_, int_);
     }
 
     void Deserialize(std::istream& is) {
-        sezz::Deserialize(is, str, aaa);
+        sezz::Deserialize(is, str_, int_);
     }
 
-public:
+private:
+    std::string str_;
+    int int_;
+};
+
+
+
+
+class NonIntrusive {
+public:     // Non intrusive, requiring external access to data members
     std::string str;
     int aaa;
 };
 
 
+namespace sezz {
+// specialization of function templates
+template<>
+void Serialize/*<NonIntrusive>*/(std::ostream& os, NonIntrusive& val) {
+    Serialize(os, val.str, val.aaa);
+}
+template<>
+NonIntrusive Deserialize<NonIntrusive>(std::istream& is) {
+    NonIntrusive val;
+    Deserialize(is, val.str, val.aaa);
+    return val;
+}
+
+}
+
+
 int main()
 {
-    //xxxxx<int>;
-    uint32_t* buf = new uint32_t[1024];
-    RingQueue<uint32_t> queue(buf, 1024);
-    clock_t start, end;
-    start = clock();
-    
+    std::fstream fs;
 
-    std::thread enqueue([&]() {
-        for (int i = 0; i < 10000000; i++) {
-            queue.Enqueue(100);
-        }
-    });
-
-    std::thread dequeue([&]() {
-        uint32_t a;
-        for (int i = 0; i < 10000000; i++) {
-            queue.Dequeue(&a);
-        }
-    });
-
-    enqueue.join();
-    dequeue.join();
-
-    end = clock();
-
-    std::cout << "F1运行时间" << (double)(end - start) << "ms" << std::endl;
-
-    std::fstream f;
-
-    f.open("qqq.txt", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
+    fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
 
 
-    std::unordered_set<std::string> fake;
-    //std::unordered_map<std::string, std::string> fake2 {
-    //    {"a", "b"},
-    //    { "cc", "dd" }
-    //};
+    std::unordered_map<std::string, std::string> test_map {
+        { "pair_key_1", "pair_value_1" },
+        { "pair_key_2", "pair_value_2" }
+    };
+    sezz::Serialize(fs, test_map);
 
-    /*std::string str = "???";
-    sezz::Serialize(f, str);*/
+    std::vector<std::string> test_vector{ 
+        "vector_1", 
+        "vector_2", 
+        "vector_3"
+    };
+    sezz::Serialize(fs, test_vector);
 
-    std::is_pointer_v<int*>;
-    std::remove_pointer_t<int*>;
+    std::vector<std::vector<std::string>> test_vector2 {
+        { "vector_1_1", "vector_2_2" },
+        { "vector_2_1", "vector_2_2" },
+        { "vector_3_1", "vector_3_2" },
+    };
+    sezz::Serialize(fs, test_vector2);
 
-    std::vector<std::string> fake2 = { "adawwd", "dawwdwa", "csac" };
-    std::vector<std::string> fake3 = { "daccs", "2e12", "zCc" };
+    Invasive test_invasive{ "str1", 2};
+    sezz::Serialize(fs, test_invasive);
 
-    int intv = 0xaaaaaaaa;
-    int* intp = &intv;
+    NonIntrusive test_non_intrusive{ "str1", 2 };
+    sezz::Serialize(fs, test_non_intrusive);
 
-    auto aaa = std::make_unique<int>(100);
-    
-    sezz::Serialize(f, aaa);
+    fs.seekg(0);
 
-    //User user{ "user", 0xaaa };
-    //sezz::is_user_serializable_v<User>;
-    //sezz::is_user_deserializable_v<User>;
+    auto test_map_de = sezz::Deserialize<std::unordered_map<std::string, std::string>>(fs);
 
-    //sezz::Serialize(f, user);
-    std::unordered_set<std::string> set_ = { "dad" };
-    sezz::Serialize(f, set_);
-    sezz::Serialize(f, fake3);
+    auto test_vector_de = sezz::Deserialize<std::vector<std::string>>(fs);
 
+    auto test_vector2_de = sezz::Deserialize<std::vector<std::vector<std::string>>>(fs);
 
+    auto test_invasive_de = sezz::Deserialize<Invasive>(fs);
 
-    f.close();
+    auto test_non_intrusive_de = sezz::Deserialize<NonIntrusive>(fs);
 
-    f.open("qqq.txt");
-
-
-    // auto v = sezz::Deserialize<std::unordered_map<std::string, std::string>>(f);
-    //int* intv2 = 0;
-    //std::vector<std::string> dese1, dese2;
-    //auto user2 = sezz::Deserialize<User>(f);
-
-
-    auto ptr = sezz::Deserialize<std::unique_ptr<int>>(f);
-
-    auto v = sezz::Deserialize<std::unordered_set<std::string>>(f);
-    auto v2 = sezz::Deserialize<std::vector<std::string>>(f);
-
-    std::cout << "Hello World!\n";
+    std::cout << "ok\n";
 }

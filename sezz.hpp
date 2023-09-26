@@ -11,13 +11,14 @@
 #include <unordered_set>
 #include <string>
 #include <vector>
+#include <optional>
 
 #define SEZZ_STD std::
 #endif
 
 namespace sezz {
 
-namespace {
+namespace exposer {
 template <class MemberType> struct Exposer {
     static MemberType memberPtr;
 };
@@ -31,13 +32,13 @@ template <class MemberType, MemberType MemberPtr> struct ExposerImpl {
 template <class MemberType, MemberType Ptr>
 typename ExposerImpl<MemberType, Ptr>::ExposerFactory
     ExposerImpl<MemberType, Ptr>::factory;
-}
-#define ACCESS(ClassName, AttrName, AttrType)                                    \
-    template struct exposer::ExposerImpl<decltype(&ClassName::AttrName),         \
-                                         &ClassName::AttrName>;                  \
-    AttrType &get_##AttrName##_from_##ClassName(ClassName &T) {                  \
-        return T.*exposer::Exposer<AttrType ClassName::*>::memberPtr;            \
-    }
+} // namespace exposer
+
+//#define SEZZ_ACCESS(ClassName, AttrName, AttrType)                               \
+//    template struct exposer::ExposerImpl<decltype(&ClassName::AttrName), &ClassName::AttrName>; \
+//    AttrType &get_##AttrName##_from_##ClassName(ClassName &T) {                  \
+//        return T.*exposer::Exposer<AttrType ClassName::*>::memberPtr;            \
+//    }
 
 namespace internal {
 /*
@@ -53,6 +54,7 @@ template<typename T>
 struct is_pair_t : SEZZ_STD false_type {};
 template<typename T1, typename T2>
 struct is_pair_t<SEZZ_STD pair<T1, T2>> : SEZZ_STD true_type {};
+
 
 // SEZZ_STD optional
 template<typename T>
@@ -303,7 +305,6 @@ void Deserialize(SEZZ_STD istream& is, T& val, Types&... args) {
     //    Deserialize(is, args...);
     //}
     (Deserialize(is, args), ...);
-    
 }
 
 } // namespace sezz
