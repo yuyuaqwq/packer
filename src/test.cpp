@@ -59,8 +59,7 @@ NonIntrusive Deserialize<NonIntrusive>(std::istream& is) {
 }
 
 
-int main()
-{
+int main() {
     std::fstream fs;
 
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
