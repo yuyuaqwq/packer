@@ -1,8 +1,6 @@
 #include <sezz/sezz.hpp>
 
-
 #include <thread>
-#include <Geek/ring_queue.hpp>
 #include <fstream>
 
 #include <vector>
@@ -20,11 +18,13 @@ public:
 
     }
 
-    void Serialize(std::ostream& os) {
+    template <class Archive>
+    void Serialize(Archive& os) {
         sezz::Serialize(os, str_, int_);
     }
 
-    void Deserialize(std::istream& is) {
+    template <class Archive>
+    void Deserialize(Archive& is) {
         sezz::Deserialize(is, str_, int_);
     }
 
@@ -45,22 +45,37 @@ public:     // Non intrusive, requiring external access to data members
 
 namespace sezz {
 // specialization of function templates
-template<>
-void Serialize/*<NonIntrusive>*/(std::ostream& os, NonIntrusive& val) {
+template <class Archive>
+void Serialize/*<std::fstream, NonIntrusive>*/(Archive& os, NonIntrusive& val) {
     Serialize(os, val.str, val.aaa);
 }
-template<>
-NonIntrusive Deserialize<NonIntrusive>(std::istream& is) {
+
+// example of overloaded return values
+template <class T, class Archive>
+    requires std::is_same_v<T, NonIntrusive>
+T Deserialize(Archive& is) {
     NonIntrusive val;
     Deserialize(is, val.str, val.aaa);
     return val;
+}
+
+// example of parameter overloading
+template <class Archive>
+void Deserialize(Archive& is, NonIntrusive& val) {
+    Deserialize(is, val.str, val.aaa);
 }
 
 }
 
 
 int main() {
+    std::optional<int> aa;
+    std::optional<int> v;
+    aa = v;
+
     std::fstream fs;
+
+    //sezz::internal::is_user_class_serializable_v<std::fstream, Invasive>;
 
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
 
@@ -93,7 +108,12 @@ int main() {
 
     fs.seekg(0);
 
+    // match based on return value or parameters
+
     auto test_map_de = sezz::Deserialize<std::unordered_map<std::string, std::string>>(fs);
+
+    //std::unordered_map<std::string, std::string> test_map_de;
+    //sezz::Deserialize(fs, test_map_de);
 
     auto test_vector_de = sezz::Deserialize<std::vector<std::string>>(fs);
 
@@ -102,6 +122,9 @@ int main() {
     auto test_invasive_de = sezz::Deserialize<Invasive>(fs);
 
     auto test_non_intrusive_de = sezz::Deserialize<NonIntrusive>(fs);
+
+    // NonIntrusive test_non_intrusive_de;
+    // sezz::Deserialize(fs, test_non_intrusive_de);
 
     std::cout << "ok\n";
 }
