@@ -24,3 +24,5 @@ auto test_map_de = sezz::Deserialize<std::unordered_map<std::string, std::string
 ## 鸣谢
 1. [C++序列化对象 ](https://www.cnblogs.com/mmc1206x/p/11053826.html)
 2. [计都](https://github.com/fuyouawa)
+3. [cereal](https://github.com/USCiLab/cereal)
+    - 参考了一些代码
