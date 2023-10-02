@@ -15,92 +15,102 @@
 namespace sezz {
 
 namespace internal {
+#pragma region 内部定义
+template<template<class> class, class, class = void>
+struct is_detected : std::false_type {};
+template<template<class T> class OpT, class T>
+struct is_detected<OpT, T, std::void_t<OpT<T>>> : std::true_type {};
+
+template<template<class, class> class, class, class, class = void>
+struct is_detected2 : std::false_type {};
+template<template<class T1, class T2> class OpT, class T1, class T2>
+struct is_detected2<OpT, T1, T2, std::void_t<OpT<T1, T2>>> : std::true_type {};
+
+template<template<class T> class OpT, class T>
+constexpr bool is_detected_v = is_detected<OpT, T>::value;
+template<template<class T1, class T2> class OpT, class T1, class T2>
+constexpr bool is_detected2_v = is_detected2<OpT, T1, T2>::value;
+
+template <template <class...> class T>
+struct TemplateType {};
+
+template <class T>
+struct ExtractTemplate {
+    static constexpr bool IsTemplate = false;
+};
+
+template <template <class...> class T, class... Args>
+struct ExtractTemplate<T<Args...>> {
+    static constexpr bool IsTemplate = true;
+    using Type = TemplateType<T>;
+};
+
+template <class T, class U>
+constexpr bool is_same_template() {
+    if constexpr (ExtractTemplate<T>::IsTemplate != ExtractTemplate<U>::IsTemplate) {
+        return false;
+    }
+    else {
+        return std::is_same_v<typename ExtractTemplate<T>::Type, typename ExtractTemplate<U>::Type>;
+    }
+}
+
+template <class T, class U>
+constexpr bool is_same_template_v = is_same_template<T, U>();
+#pragma endregion
 // Type
 
-// pair
 template<typename T>
-struct is_pair_t : std::false_type {};
-template<typename T1, typename T2>
-struct is_pair_t<std::pair<T1, T2>> : std::true_type {};
+using is_iterable_t = std::void_t<decltype(std::begin(std::declval<T>())), decltype(std::end(std::declval<T>()))>;
 
+template<typename T>
+using is_unique_ptr_t = std::void_t<decltype(&T::operator->), decltype(&T::operator*)>;
 
-// optional
-template<typename T>
-struct is_optional_t : std::false_type {};
-template<typename T>
-struct is_optional_t<std::optional<T>> : std::true_type {};
-
-// map
-template<typename T>
-struct is_map_t : std::false_type {};
-template<typename T1, typename T2>
-struct is_map_t<std::map<T1, T2>> : std::true_type {};
-template<typename T1, typename T2, typename T3>
-struct is_map_t<std::map<T1, T2, T3>> : std::true_type {};
-
-// unordered_map
-template<typename T>
-struct is_unordered_map_t : std::false_type {};
-template<typename T1, typename T2>
-struct is_unordered_map_t<std::unordered_map<T1, T2>> : std::true_type {};
-
-// set
-template<typename T>
-struct is_set_t : std::false_type {};
-template<typename T1, typename T2>
-struct is_set_t<std::set<T1, T2>> : std::true_type {};
-
-// unordered_set
-template<typename T>
-struct is_unordered_set_t : std::false_type {};
-template<typename T1, typename T2>
-struct is_unordered_set_t<std::unordered_set<T1, T2>> : std::true_type {};
-
-// basic_string
-template<typename T>
-struct is_string_t : std::false_type {};
-template<typename T>
-struct is_string_t<std::basic_string<T>> : std::true_type {};
-
-// vector
-template<typename T>
-struct is_vector_t : std::false_type {};
-template<typename T>
-struct is_vector_t<std::vector<T>> : std::true_type {};
-
-// iterative
-template<typename T, typename = void>
-struct is_iterable_t : std::false_type {};
-template<typename T>
-struct is_iterable_t<T, std::void_t<decltype(std::begin(std::declval<T>())), decltype(std::end(std::declval<T>()))>> : std::true_type {};
-
-// unique_ptr
-template<typename T, typename = void>
-struct is_unique_ptr_t : std::false_type {};
-template<typename T>
-struct is_unique_ptr_t<T, std::void_t<decltype(&T::operator->), decltype(&T::operator*)>> : std::true_type {};
-
-// serializable class
-template<typename Archive, typename T, typename = void>
-struct is_user_class_serializable_t : std::false_type {};
 template<typename Archive, typename T>
-struct is_user_class_serializable_t<Archive, T, std::void_t<decltype(std::declval<T>().Serialize(std::declval<Archive&>()))>> : std::true_type {};
+using is_user_class_serializable_t = std::void_t<decltype(std::declval<T>().Serialize(std::declval<Archive&>()))>;
 
-template<typename Archive, typename T, typename = void>
-struct is_user_class_deserializable_t : std::false_type {};
 template<typename Archive, typename T>
-struct is_user_class_deserializable_t<Archive, T, std::void_t<decltype(std::declval<T>().Serialize(std::declval<Archive&>()))>> : std::true_type {};
+using is_user_class_deserializable_t = std::void_t<decltype(std::declval<T>().Deserialize(std::declval<Archive&>()))>;
 
+using place_t = char;
 
 // Value
 
 // pair
 template <class T>
-constexpr bool is_pair_v = internal::is_pair_t<T>::value;
+constexpr bool is_pair_v = is_same_template_v<T, std::pair<place_t, place_t>>;
 
 // optional
 template <class T>
-constexpr bool is_optional_v = internal::is_optional_t<T>::value;
+constexpr bool is_optional_v = is_same_template_v<T, std::optional<place_t>>;
+
+// unordered_map
+template <class T>
+constexpr bool is_unordered_map_v = is_same_template_v<T, std::unordered_map<place_t, place_t>>;
+
+// unordered_set
+template <class T>
+constexpr bool is_unordered_set_v = is_same_template_v<T, std::unordered_set<place_t>>;
+
+// map
+template <class T>
+constexpr bool is_map_v = is_same_template_v<T, std::map<place_t, place_t>>;
+
+// set
+template <class T>
+constexpr bool is_set_v = is_same_template_v<T, std::set<place_t>>;
+
+// string
+template <class T>
+constexpr bool is_string_v = is_same_template_v<T, std::basic_string<place_t>>;
+
+// vector
+template <class T>
+constexpr bool is_vector_v = is_same_template_v<T, std::vector<place_t>>;
+
+// unique_ptr
+template <class T>
+constexpr bool is_unique_ptr_v = is_detected_v<is_unique_ptr_t, T>;
 
 // memory copyable
 template <class T>
@@ -108,41 +118,13 @@ constexpr bool is_memcopyable_v = std::is_trivially_copyable_v<T>;
 
 // iterative
 template <class T>
-constexpr bool is_iterable_v = internal::is_iterable_t<T>::value;
-
-// unordered_map
-template <class T>
-constexpr bool is_unordered_map_v = internal::is_unordered_map_t<T>::value;
-
-// map
-template <class T>
-constexpr bool is_map_v = internal::is_map_t<T>::value;
-
-// unordered_set
-template <class T>
-constexpr bool is_unordered_set_v = internal::is_unordered_set_t<T>::value;
-
-// set
-template <class T>
-constexpr bool is_set_v = internal::is_set_t<T>::value;
-
-// string
-template <class T>
-constexpr bool is_string_v = internal::is_string_t<T>::value;
-
-// vector
-template <class T>
-constexpr bool is_vector_v = internal::is_vector_t<T>::value;
-
-// unique_ptr
-template <class T>
-constexpr bool is_unique_ptr_v = internal::is_unique_ptr_t<T>::value;
+constexpr bool is_iterable_v = is_detected_v<is_iterable_t, T>;
 
 // serializable class
 template <typename Archive, class T>
-constexpr bool is_user_class_serializable_v = internal::is_user_class_serializable_t<Archive, T>::value;
+constexpr bool is_user_class_serializable_v = is_detected2_v<is_user_class_serializable_t, Archive, T>;
 template <typename Archive, class T>
-constexpr bool is_user_class_deserializable_v = internal::is_user_class_deserializable_t<Archive, T>::value;
+constexpr bool is_user_class_deserializable_v = is_detected2_v<is_user_class_deserializable_t, Archive, T>;
 
 template <class>
 constexpr bool always_false = false;
