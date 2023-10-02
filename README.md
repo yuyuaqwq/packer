@@ -18,6 +18,8 @@ std::unordered_map<std::string, std::string> test_map {
 };
 sezz::Serialize(fs, test_map);
 
+fs.seekg(0);
+
 auto test_map_de = sezz::Deserialize<std::unordered_map<std::string, std::string>>(fs);
 ```
 
