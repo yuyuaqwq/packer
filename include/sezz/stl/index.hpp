@@ -6,8 +6,8 @@
 namespace sezz {
 template <class Archive, class T>
 void SerializeIndex(Archive& ar, T&& val) {
-    uint32_t size = val.size();
-    ar.GetIoStream().write((const char*)&size, sizeof(size));
+    size_t size = val.size();
+    ar.Save(size);
     for (auto& v : val) {
         ar.Save(v);
     }
@@ -16,8 +16,7 @@ void SerializeIndex(Archive& ar, T&& val) {
 template <class T, class Archive>
 T DeserializeIndex(Archive& ar) {
     T res{};
-    uint32_t size = 0;
-    ar.GetIoStream().read((char*)&size, sizeof(uint32_t));
+    auto size = ar.Load<size_t>();
     for (int64_t i = 0; i < size; i++) {
         res.insert(ar.Load<typename T::value_type>());
     }
