@@ -6,8 +6,8 @@
 - C++20
 - 支持STL常用容器
 - 支持自定义类对象(侵入式与非侵入式)
-- 支持std::unique_ptr
-- 基于zigzag/varint编码＆解码u/i 16/32/64
+- 支持`std::unique_ptr`
+- 基于`zigzag`/`varint`编码＆解码`u/i 16/32/64`
     - 若不使用浮点数，通常不需要考虑网络字节序问题。
 
 ## 快速入门
@@ -37,9 +37,10 @@ int main() {
 }
 ```
 
-## 鸣谢
+## 引用&鸣谢
 1. [C++序列化对象 ](https://www.cnblogs.com/mmc1206x/p/11053826.html)
 2. [计都](https://github.com/fuyouawa)
     - *为此项目的建设提供了许多指导。*
 3. [cereal](https://github.com/USCiLab/cereal)
     - *参考了一些设计。*
+4. [如何实现对多个字节的数据序列化+压缩](https://www.eet-china.com/mp/a202331.html)
