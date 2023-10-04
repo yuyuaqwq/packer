@@ -7,20 +7,34 @@
 - 支持STL常用容器
 - 支持自定义类对象(侵入式与非侵入式)
 - 支持std::unique_ptr
+- 基于zigzag/varint编码＆解码u/i 16/32/64
+    - 若不使用浮点数，通常不需要考虑网络字节序问题。
 
 ## 快速入门
 ``` C++
-fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
+#include <iostream>
+#include <fstream>
 
-std::unordered_map<std::string, std::string> test_map {
-    { "pair_key_1", "pair_value_1" },
-    { "pair_key_2", "pair_value_2" }
-};
-sezz::Serialize(fs, test_map);
+#include <sezz/sezz.hpp>
+#include <sezz/stl/string.hpp>
+#include <sezz/stl/unordered_map.hpp>
 
-fs.seekg(0);
+int main() {
+    std::fstream fs;
+    fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
 
-auto test_map_de = sezz::Deserialize<std::unordered_map<std::string, std::string>>(fs);
+    sezz::BinaryArchive<std::iostream> ar(fs);
+
+    std::unordered_map<std::string, std::string> test_map {
+        { "pair_key_1", "pair_value_1" },
+        { "pair_key_2", "pair_value_2" }
+    };
+    ar.Save(test_map);
+
+    fs.seekg(0);
+
+    auto test_map_de = ar.Load<std::unordered_map<std::string, std::string>>();
+}
 ```
 
 ## 鸣谢
@@ -28,4 +42,4 @@ auto test_map_de = sezz::Deserialize<std::unordered_map<std::string, std::string
 2. [计都](https://github.com/fuyouawa)
     - *为此项目的建设提供了许多指导。*
 3. [cereal](https://github.com/USCiLab/cereal)
-    - *参考了一些代码。*
+    - *参考了一些设计。*

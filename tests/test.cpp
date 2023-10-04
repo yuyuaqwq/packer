@@ -1,18 +1,15 @@
-
+#include <thread>
+#include <iostream>
+#include <fstream>
 
 #include <sezz/sezz.hpp>
-#include <sezz/varint.hpp>
 
 #include <sezz/stl/set.hpp>
 #include <sezz/stl/map.hpp>
 #include <sezz/stl/vector.hpp>
 #include <sezz/stl/string.hpp>
 
-#include <thread>
-#include <iostream>
-#include <fstream>
 
-#include <vector>
 class Invasive {
 public:
     Invasive() :str_() {        // Default constructor required
