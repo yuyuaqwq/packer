@@ -5,22 +5,22 @@
 
 namespace sezz {
 template <class Archive, class T>
-void SerializeIndex(Archive& os, T&& val) {
+void SerializeIndex(Archive& ar, T&& val) {
     uint32_t size = val.size();
-    os.write((const char*)&size, sizeof(size));
+    ar.GetIoStream().write((const char*)&size, sizeof(size));
     for (auto& v : val) {
-        Serialize(os, v);
+        ar.Save(v);
     }
 }
 
 template <class T, class Archive>
-T DeserializeIndex(Archive& is) {
+T DeserializeIndex(Archive& ar) {
     using DecayT = std::decay_t<T>;
     DecayT res{};
     uint32_t size = 0;
-    is.read((char*)&size, sizeof(uint32_t));
+    ar.GetIoStream().read((char*)&size, sizeof(uint32_t));
     for (int64_t i = 0; i < size; i++) {
-        res.insert(Deserialize<typename T::value_type>(is));
+        res.insert(ar.Load<typename T::value_type>());
     }
     return res;
 }

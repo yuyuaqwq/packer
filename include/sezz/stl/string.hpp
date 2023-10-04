@@ -9,21 +9,21 @@ namespace sezz {
 
 template <class Archive, class T>
     requires type_traits::is_same_template_v<std::decay_t<T>, std::basic_string<type_traits::place_t>>
-void Serialize(Archive& os, T&& val) {
+void Serialize(Archive& ar, T&& val) {
     uint32_t size = val.size();
-    os.write((const char*)&size, sizeof(size));
-    os.write(val.data(), size);
+    ar.GetIoStream().write((const char*)&size, sizeof(size));
+    ar.GetIoStream().write(val.data(), size);
 }
 
 template <class T, class Archive>
     requires type_traits::is_same_template_v<std::decay_t<T>, std::basic_string<type_traits::place_t>>
-T Deserialize(Archive& is) {
+T Deserialize(Archive& ar) {
     using DecayT = std::decay_t<T>;
     uint32_t size = 0;
-    is.read((char*)&size, sizeof(uint32_t));
+    ar.GetIoStream().read((char*)&size, sizeof(uint32_t));
     DecayT res{};
     res.resize(size);
-    is.read(res.data(), size);
+    ar.GetIoStream().read(res.data(), size);
     return res;
 }
 
