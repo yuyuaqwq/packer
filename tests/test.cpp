@@ -1,6 +1,13 @@
+#include <sezz/stl/string.hpp>
 #include <sezz/sezz.hpp>
+#include <sezz/varint.hpp>
+
+#include <sezz/stl/map.hpp>
+#include <sezz/stl/vector.hpp>
+
 
 #include <thread>
+#include <iostream>
 #include <fstream>
 
 #include <vector>
@@ -10,7 +17,7 @@ public:
         int_ = 0;
     }
 
-    Invasive(std::string_view str, int _int) :str_(str), int_(_int) {
+    Invasive(std::string_view str, int _int, std::set<int> set) :str_(str), int_(_int), set_{ set } {
 
     }
 
@@ -20,7 +27,7 @@ public:
 
     template <class Archive>
     void Serialize(Archive& os) {
-        sezz::Serialize(os, str_, int_);
+        sezz::Serialize(os, set_, str_, int_);
     }
 
     template <class Archive>
@@ -31,6 +38,7 @@ public:
 private:
     std::string str_;
     int int_;
+    std::set<int> set_;
 };
 
 
@@ -69,6 +77,11 @@ void Deserialize(Archive& is, NonIntrusive& val) {
 
 
 int main() {
+    uint8_t buf[10] = { 0 };
+    sezz::varint::ZigzagEncoded(5000, buf);
+    int64_t val;
+    sezz::varint::ZigzagDecode(&val, buf);
+
     std::optional<int> aa;
     std::optional<int> v;
     aa = v;
@@ -78,13 +91,19 @@ int main() {
     //sezz::internal::is_user_class_serializable_v<std::fstream, Invasive>;
 
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
+    
+    //std::string test_str = "abc";
+    //sezz::Serialize(fs, test_str);
 
+    //std::map<std::string, std::string>
 
-    std::unordered_map<std::string, std::string> test_map {
+    std::map<std::string, std::string> test_map {
         { "pair_key_1", "pair_value_1" },
         { "pair_key_2", "pair_value_2" }
     };
     sezz::Serialize(fs, test_map);
+    
+    
 
     std::vector<std::string> test_vector{ 
         "vector_1", 
@@ -100,7 +119,7 @@ int main() {
     };
     sezz::Serialize(fs, test_vector2);
 
-    Invasive test_invasive{ "str1", 2};
+    Invasive test_invasive{ "str1", 2, {1,2,3} };
     sezz::Serialize(fs, test_invasive);
 
     NonIntrusive test_non_intrusive{ "str1", 2 };
@@ -110,7 +129,7 @@ int main() {
 
     // match based on return value or parameters
 
-    auto test_map_de = sezz::Deserialize<std::unordered_map<std::string, std::string>>(fs);
+    auto test_map_de = sezz::Deserialize<std::map<std::string, std::string>>(fs);
 
     //std::unordered_map<std::string, std::string> test_map_de;
     //sezz::Deserialize(fs, test_map_de);
