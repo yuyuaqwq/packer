@@ -44,9 +44,9 @@ constexpr bool always_false = false;
 } // namespace internal
 
 template <class Archive, class T>
-    requires internal::is_user_class_serializable_v<Archive, T> ||
-             std::is_pointer_v<T> ||
-             internal::is_memcopyable_v<T>
+    requires internal::is_user_class_serializable_v<Archive, std::decay_t<T>> ||
+             std::is_pointer_v<std::decay_t<T>> ||
+             internal::is_memcopyable_v<std::decay_t<T>>
 void Serialize(Archive& os, T&& val) {
     if constexpr (internal::is_user_class_serializable_v<Archive, T>) {
         val.Serialize(os);
@@ -65,10 +65,10 @@ void Serialize(Archive& os, T&& val) {
     
 }
 
-template <class Archive, class T, class... Types>
-void Serialize(Archive& os, T&& val, Types&... args) {
-    Serialize(os, val);
-    (Serialize(os, args), ...);
+template <class Archive, class... Types>
+    requires (sizeof...(Types) > 1)
+void Serialize(Archive& os, Types&&... vals) {
+    (Serialize(os, std::forward<Types>(vals)), ...);
 }
 
 template <class T, class Archive>
@@ -97,10 +97,9 @@ T Deserialize(Archive& is) {
     return res;
 }
 
-template <class Archive, class T, class... Types>
-void Deserialize(Archive& is, T&& val, Types&... args) {
-    val = Deserialize<T>(is);
-    (Deserialize(is, args), ...);
+template <class Archive, class... Types>
+void Deserialize(Archive& is, Types&... buffers) {
+    (Deserialize(is, buffers), ...);
 }
 
 } // namespace sezz
