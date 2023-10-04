@@ -4,7 +4,7 @@
 #include <typeinfo>
 
 namespace sezz {
-namespace type_traits {
+namespace detail{
 
 template <template <class...> class T>
 struct TemplateType {};
@@ -42,7 +42,7 @@ concept iterate_accept = requires(T t) {
 
 using place_t = char;
 
-} // namespace internal
+} // namespace detail
 } // namespace sezz
 
 #endif // SEZZ_TYPE_TRAITS_HPP_

@@ -5,7 +5,7 @@
 
 namespace sezz {
 
-namespace internal {
+namespace detail {
 
 template<typename Archive, typename T>
 concept serialize_accept = requires(Archive ar, T t) { t.Serialize(ar); };
@@ -15,24 +15,22 @@ concept deserialize_accept = requires(Archive ar, T t) { t.Deserialize(ar); };
 template <class>
 constexpr bool always_false = false;
 
-} // namespace internal
+} // namespace detail
 
 
 template <class IoStream>
 class BinaryArchive {
 public:
-    BinaryArchive(IoStream& io_stream) : io_stream_{ io_stream } {
-
-    }
+    BinaryArchive(IoStream& io_stream) : io_stream_{ io_stream } { }
 
     template <class T>
     void Save(T&& val) {
         using DecayT = std::decay_t<T>;
-        if constexpr (internal::serialize_accept<BinaryArchive, DecayT>) {
+        if constexpr (detail::serialize_accept<BinaryArchive, DecayT>) {
             val.Serialize(*this);
         }
         else if constexpr (std::is_pointer_v<DecayT>) {
-            static_assert(internal::always_false<T>, "Serializing raw pointers is not supported!");
+            static_assert(detail::always_false<T>, "Serializing raw pointers is not supported!");
         }
         else if constexpr (std::is_trivially_copyable_v<DecayT>) {
             io_stream_.write((const char*)&val, sizeof(DecayT));
@@ -40,7 +38,7 @@ public:
         else {
             Serialize(*this, std::forward<T>(val));
             //printf("types that cannot be serialized: %s\n", typeid(T).name()); throw;
-            //static_assert(internal::always_false<T>, "types that cannot be serialized.");
+            //static_assert(detail::always_false<T>, "types that cannot be serialized.");
         }
     }
 
@@ -51,7 +49,7 @@ public:
 
     template <class T>
     T Load() {
-        if constexpr (internal::deserialize_accept<BinaryArchive, T>) {
+        if constexpr (detail::deserialize_accept<BinaryArchive, T>) {
             T res{};
             res.Deserialize(*this);
             return res;
@@ -60,7 +58,7 @@ public:
             // res = new std::remove_pointer_t<DecayT>{ Deserialize<std::remove_pointer_t<DecayT>>(is) };
             // 不支持原始指针的原因是，需要通过new构造一个对象
             // 但在现代cpp中，原始指针代表的是引用一个在其生命周期内的对象，若使用者未注意就会造成内存泄漏
-            static_assert(internal::always_false<T>, "Deserializing raw pointers is not supported!");
+            static_assert(detail::always_false<T>, "Deserializing raw pointers is not supported!");
         }
         // 可直接内存复制的类型
         else if constexpr (std::is_trivially_copyable_v<T>) {
@@ -71,13 +69,13 @@ public:
         else {
             return Deserialize<T>(*this);
             //printf("types that cannot be deserialized: %s\n", typeid(T).name()); throw;
-            //static_assert(internal::always_false<T>, "types that cannot be deserialized.");
+            //static_assert(detail::always_false<T>, "types that cannot be deserialized.");
         }
     }
 
-    template <class T, class... Types>
+    template <class T, class... Types, class DecayT = std::decay_t<T>>
     void Load(T& buf, Types&... bufs) {
-        buf = Load<T>();
+        buf = Load<DecayT>();
         (Load(bufs), ...);
     }
 

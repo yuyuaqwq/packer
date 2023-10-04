@@ -10,15 +10,15 @@
 namespace sezz {
 
 template <class Archive, class T>
-    requires type_traits::is_same_template_v<std::decay_t<T>, std::map<type_traits::place_t, type_traits::place_t>>
+    requires detail::is_same_template_v<std::decay_t<T>, std::map<detail::place_t, detail::place_t>>
 void Serialize(Archive& ar, T&& val) {
     SerializeIndex(ar, val);
 }
 
-template <class T, class Archive>
-    requires type_traits::is_same_template_v<std::decay_t<T>, std::map<type_traits::place_t, type_traits::place_t>>
+template <class T, class Archive, class DecayT = std::decay_t<T>>
+    requires detail::is_same_template_v<DecayT, std::map<detail::place_t, detail::place_t>>
 T Deserialize(Archive& ar) {
-    return DeserializeIndex<T>(ar);
+    return DeserializeIndex<DecayT>(ar);
 }
 
 } // namespace sezz

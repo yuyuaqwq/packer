@@ -7,21 +7,21 @@
 namespace sezz {
 
 template <class Archive, class T>
-    requires type_traits::is_same_template_v<std::decay_t<T>, std::optional<type_traits::place_t>>
-void Serialize(Archive& os, T& val) {
+    requires detail::is_same_template_v<std::decay_t<T>, std::optional<detail::place_t>>
+void Serialize(Archive& ar, T& val) {
     bool has_value = val.has_value();
-    Serialize(os, has_value);
+    ar.Save(has_value);
     if (has_value) {
-        Serialize(os, val.value());
+        ar.Save(val.value());
     }
 }
 
-template <class T, class Archive>
-    requires type_traits::is_same_template_v<std::decay_t<T>, std::optional<type_traits::place_t>>
-T Deserialize(Archive& is) {
-    bool has_value = Deserialize<bool>(is);
+template <class T, class Archive, class DecayT = std::decay_t<T>>
+    requires detail::is_same_template_v<DecayT, std::optional<detail::place_t>>
+T Deserialize(Archive& ar) {
+    bool has_value = ar.Load<bool>();
     if (has_value) {
-        return Deserialize<typename T::value_type>(is);
+        return ar.Load<typename DecayT::value_type>();
     } else {
         return std::nullopt;
     }

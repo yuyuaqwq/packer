@@ -7,16 +7,16 @@
 namespace sezz {
 
 template <class Archive, class T>
-    requires type_traits::is_same_template_v<std::decay_t<T>, std::unique_ptr<type_traits::place_t>>
+    requires detail::is_same_template_v<std::decay_t<T>, std::unique_ptr<detail::place_t>>
 void Serialize(Archive& os, T&& val) {
-    Serialize(os, *val, args...);
+    ar.Sava(*val, args...);
 }
 
-template <class T, class Archive>
-    requires type_traits::is_same_template_v<std::decay_t<T>, std::unique_ptr<type_traits::place_t>>
-T Deserialize(Archive& is) {
+template <class T, class Archive, class DecayT = std::decay_t<T>>
+    requires detail::is_same_template_v<DecayT, std::unique_ptr<detail::place_t>>
+T Deserialize(Archive& ar) {
     using DecayRawT = std::decay_t<DecayT::element_type>;
-    return std::make_unique<DecayRawT>(Deserialize<DecayRawT>(is));
+    return std::make_unique<DecayRawT>(ar.Load<DecayRawT>());
 }
 
 } // namespace sezz

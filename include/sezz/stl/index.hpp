@@ -15,8 +15,7 @@ void SerializeIndex(Archive& ar, T&& val) {
 
 template <class T, class Archive>
 T DeserializeIndex(Archive& ar) {
-    using DecayT = std::decay_t<T>;
-    DecayT res{};
+    T res{};
     uint32_t size = 0;
     ar.GetIoStream().read((char*)&size, sizeof(uint32_t));
     for (int64_t i = 0; i < size; i++) {
@@ -24,6 +23,8 @@ T DeserializeIndex(Archive& ar) {
     }
     return res;
 }
+
+
 
 } // namespace sezz
 
