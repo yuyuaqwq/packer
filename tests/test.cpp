@@ -4,11 +4,13 @@
 
 #include <sezz/sezz.hpp>
 
+#include <sezz/stl/array.hpp>
+#include <sezz/stl/tuple.hpp>
 #include <sezz/stl/set.hpp>
 #include <sezz/stl/map.hpp>
 #include <sezz/stl/vector.hpp>
 #include <sezz/stl/string.hpp>
-
+#include <sezz/stl/memory.hpp>
 
 class Invasive {
 public:
@@ -79,7 +81,10 @@ void Deserialize(Archive& ar, NonIntrusive& val) {
 
 } // namespace sezz
 
+
+
 int main() {
+
 
     uint8_t buf[10] = { 0 };
     sezz::varint::ZigzagEncoded(5000, buf);
@@ -92,6 +97,30 @@ int main() {
     
     sezz::BinaryArchive<std::iostream> ar(fs);
 
+
+    std::shared_ptr<int> test_shared1 = std::make_shared<int>(10000);
+    ar.Save(test_shared1);
+
+    std::shared_ptr<int> test_shared2 = test_shared1;
+    ar.Save(test_shared2);
+
+    std::weak_ptr<int> test_weak {test_shared1};
+    ar.Save(test_weak);
+
+    std::unique_ptr<int> test_unique = std::make_unique<int>(10000);
+    ar.Save(test_unique);
+
+    int* test_raw_ptr = test_unique.get();
+    ar.Save(test_raw_ptr);
+
+
+
+    std::array<int, 100> test_array = { 1123070,13213,341432423,432234,42334324,43141 };
+    ar.Save(test_array);
+
+    std::tuple<std::string, int> test_tuple = { "tuple_str", 1143141323 };
+    ar.Save(test_tuple);
+
     std::string test_str = "abc";
     ar.Save(test_str);
 
@@ -101,7 +130,11 @@ int main() {
     };
     ar.Save(test_map);
 
-    
+
+ 
+    //char8_t test;
+    //ar.Save(test);
+
     std::vector<std::string> test_vector{ 
         "vector_1", 
         "vector_2", 
@@ -122,9 +155,29 @@ int main() {
     NonIntrusive test_non_intrusive{ "str1", 2};
     ar.Save(test_non_intrusive);
 
-    fs.seekg(0);
 
+
+    fs.seekg(0);
     
+
+
+    auto test_shared1_de = ar.Load<std::shared_ptr<int>>();
+
+    auto test_shared2_de = ar.Load<std::shared_ptr<int>>();
+
+    auto test_weak_de = ar.Load<std::weak_ptr<int>>();
+
+    auto test_unique_de = ar.Load<std::unique_ptr<int>>();
+
+    auto test_raw_ptr_de = ar.Load<int*>();
+
+
+
+
+    auto test_array_de = ar.Load<std::array<int, 100>>();
+
+    auto test_tuple_de = ar.Load<std::tuple<std::string, int>>();
+
     auto test_str_de = ar.Load<std::string>();
     // match based on return value or parameters
     auto test_map_de = ar.Load<std::map<std::string, std::string>>();

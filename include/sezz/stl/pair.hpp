@@ -22,7 +22,9 @@ T Deserialize(Archive& ar) {
     //auto second = ar.Load<typename DecayT::second_type>();
     //::new(&res) DecayT(first, second);
     //return res;
-    return std::make_pair(ar.Load<typename DecayT::first_type>(), ar.Load<typename DecayT::second_type>());
+    auto first = ar.Load<typename DecayT::first_type>();
+    auto second = ar.Load<typename DecayT::second_type>();
+    return std::make_pair(std::move(first), std::move(second));
 }
 
 } // namespace sezz

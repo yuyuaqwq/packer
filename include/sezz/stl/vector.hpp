@@ -20,7 +20,7 @@ template <class T, class Archive, class DecayT = std::decay_t<T>>
     requires detail::is_same_template_v<DecayT, std::vector<detail::place_t>>
 T Deserialize(Archive& ar) {
     auto size = ar.Load<size_t>();
-    T res{ size };
+    DecayT res{ size };
     for (int64_t i = 0; i < size; i++) {
         res[i] = ar.Load<typename DecayT::value_type>();
     }
