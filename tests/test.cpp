@@ -98,11 +98,6 @@ int main() {
     
     sezz::BinaryArchive<std::iostream> ar(fs);
 
-    float aa = 114.514;
-    ar.Save(aa);
-    fs.seekg(0);
-    auto bb = ar.Load<float>();
-
 
     std::shared_ptr<int> test_shared1 = std::make_shared<int>(10000);
     ar.Save(test_shared1);
