@@ -86,16 +86,22 @@ void Deserialize(Archive& ar, NonIntrusive& val) {
 int main() {
 
 
+
     uint8_t buf[10] = { 0 };
-    sezz::varint::ZigzagEncoded(5000, buf);
+    sezz::algorithm::ZigzagEncoded(5000, buf);
     int64_t val;
-    sezz::varint::ZigzagDecode(&val, buf);
+    sezz::algorithm::ZigzagDecode(&val, buf);
 
     std::fstream fs;
 
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
     
     sezz::BinaryArchive<std::iostream> ar(fs);
+
+    float aa = 114.514;
+    ar.Save(aa);
+    fs.seekg(0);
+    auto bb = ar.Load<float>();
 
 
     std::shared_ptr<int> test_shared1 = std::make_shared<int>(10000);
