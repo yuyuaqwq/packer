@@ -86,7 +86,6 @@ void Deserialize(Archive& ar, NonIntrusive& val) {
 int main() {
 
 
-
     uint8_t buf[10] = { 0 };
     sezz::algorithm::ZigzagEncoded(5000, buf);
     int64_t val;
@@ -98,6 +97,13 @@ int main() {
     
     sezz::BinaryArchive<std::iostream> ar(fs);
 
+    double test_double = 114.514;
+    ar.Save(test_double);
+
+
+
+    float test_float = 114.514;
+    ar.Save(test_float);
 
     std::shared_ptr<int> test_shared1 = std::make_shared<int>(10000);
     ar.Save(test_shared1);
@@ -156,11 +162,11 @@ int main() {
     NonIntrusive test_non_intrusive{ "str1", 2};
     ar.Save(test_non_intrusive);
 
-
-
     fs.seekg(0);
     
+    auto test_double_de = ar.Load<double>();
 
+    auto test_float_de = ar.Load<float>();
 
     auto test_shared1_de = ar.Load<std::shared_ptr<int>>();
 

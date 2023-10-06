@@ -42,6 +42,9 @@ concept iterate_accept = requires(T t) {
 
 using place_t = char;
 
+template <class>
+constexpr bool always_false = false;
+
 } // namespace detail
 } // namespace sezz
 

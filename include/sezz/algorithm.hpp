@@ -2,6 +2,8 @@
 #define SEZZ_ALGORITHM_HPP_
 
 #include <stdint.h>
+#include <sezz/type_traits.hpp>
+
 
 namespace sezz {
 namespace algorithm {
@@ -102,6 +104,38 @@ uint64_t Reverse64Bit(uint64_t val) {
         (static_cast<uint64_t>(gs_bit_reverse_table[(val >> 48) & 0xff]) << 8) |
         (static_cast<uint64_t>(gs_bit_reverse_table[(val >> 56) & 0xff]));
     return res;
+}
+
+uint32_t Reverse4Byte(uint32_t val) {
+    return (val << 24) | ((val & 0xff00) << 8) | ((val & 0xff0000) >> 8) | (val >> 24);
+}
+
+uint64_t Reverse8Byte(uint64_t val) {
+    return (val << 56) | ((val & 0xff00) << 40) | ((val & 0xff0000) << 24) | ((val & 0xff000000) << 8) | ((val & 0xff00000000) >> 8) | ((val & 0xff0000000000) >> 24) | ((val & 0xff000000000000) >> 40) | (val >> 56);
+}
+
+template <typename T>
+T RevereseByte(T val) {
+    if constexpr (sizeof(T) == 4) {
+        uint32_t res = Reverse4Byte(*reinterpret_cast<uint32_t*>(&val));
+        return *reinterpret_cast<T*>(&res);
+    }
+    else if constexpr (sizeof(T) == 8) {
+        uint64_t res = Reverse8Byte(*reinterpret_cast<uint64_t*>(&val));
+        return *reinterpret_cast<T*>(&res);
+    }
+    else {
+        static_assert(detail::always_false<T>, "Types that cannot be reversed.");
+    }
+}
+
+bool IsNetworkEndian() {
+    union U {
+        uint8_t arr[2];
+        uint16_t int16;
+    };
+    U var{ {1, 0} };
+    return var.int16 != 1;
 }
 
 } // namespace varint

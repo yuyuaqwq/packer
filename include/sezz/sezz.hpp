@@ -13,8 +13,6 @@ concept serialize_accept = requires(Archive ar, T t) { t.Serialize(ar); };
 template<typename Archive, typename T>
 concept deserialize_accept = requires(Archive ar, T t) { t.Deserialize(ar); };
 
-template <class>
-constexpr bool always_false = false;
 
 class MemoryRuntime;
 
@@ -54,9 +52,14 @@ public:
                 io_stream_.write(reinterpret_cast<char*>(buf), len);
             }
         }
-        //else if constexpr (std::is_floating_point_v<DecayT>) {
-        //    static_assert(detail::always_false<T>, "This type of floating-point number cannot be serialized!");
-        //}
+        else if constexpr (std::is_floating_point_v<DecayT>) {
+            DecayT temp = val;
+            if (!algorithm::IsNetworkEndian()) {
+                temp = algorithm::RevereseByte(temp);
+            }
+            io_stream_.write(reinterpret_cast<char*>(&temp), sizeof(DecayT));
+            //static_assert(detail::always_false<T>, "This type of floating-point number cannot be serialized!");
+        }
         //else if constexpr (std::is_trivially_copyable_v<DecayT>) {
         //    io_stream_.write(reinterpret_cast<char*>(&val), sizeof(DecayT));
         //}
@@ -95,9 +98,15 @@ public:
                 return static_cast<uint64_t>(res);
             }
         }
-        //else if constexpr (std::is_floating_point_v<DecayT>) {
-        //    static_assert(detail::always_false<T>, "This type of floating-point number cannot be serialized!");
-        //}
+        else if constexpr (std::is_floating_point_v<DecayT>) {
+            DecayT res;
+            io_stream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
+            if (!algorithm::IsNetworkEndian()) {
+                res = algorithm::RevereseByte(res);
+            }
+            return res;
+            //static_assert(detail::always_false<T>, "This type of floating-point number cannot be deserialized!");
+        }
         // 可直接内存复制的类型
         //else if constexpr (std::is_trivially_copyable_v<DecayT>) {
         //    DecayT res{};
