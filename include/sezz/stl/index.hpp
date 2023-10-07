@@ -18,7 +18,7 @@ T DeserializeIndex(Archive& ar) {
     T res{};
     auto size = ar.Load<size_t>();
     for (int64_t i = 0; i < size; i++) {
-        res.insert(ar.Load<typename T::value_type>());
+        res.emplace(ar.Load<typename T::value_type>());
     }
     return res;
 }
