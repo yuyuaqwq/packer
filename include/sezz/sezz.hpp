@@ -1,6 +1,8 @@
 ﻿#ifndef SEZZ_SEZZ_HPP_
 #define SEZZ_SEZZ_HPP_
 
+#include <vector>
+
 #include <sezz/type_traits.hpp>
 #include <sezz/algorithm.hpp>
 
@@ -13,11 +15,47 @@ concept serialize_accept = requires(Archive ar, T t) { t.Serialize(ar); };
 template<typename Archive, typename T>
 concept deserialize_accept = requires(Archive ar, T t) { t.Deserialize(ar); };
 
-
 class MemoryRuntime;
 
 } // namespace detail
 
+
+class MemoryIoStream {
+public:
+    MemoryIoStream(size_t size) : buf_(size){
+        pos_ = 0;
+    }
+
+    void write(const char* buf, size_t size) {
+        if (pos_ + size > buf_.size()) {
+            buf_.resize((buf_.size() + size) * 2);
+        }
+        auto data = &buf_[pos_];
+        memcpy(data, buf, size);
+        pos_ += size;
+    }
+
+    void read(char* buf, size_t size) {
+        if (pos_ + size > buf_.size()) {
+            throw std::runtime_error("Stream data has reached the end.");
+        }
+        auto data = &buf_[pos_];
+        memcpy(buf, data, size);
+        pos_ += size;
+    }
+
+    size_t tellp() {
+        return pos_;
+    }
+
+    void seekp(size_t pos) {
+        pos_ = pos;
+    }
+    
+private:
+    std::vector<uint8_t> buf_;
+    size_t pos_;
+};
 
 template <class IoStream>
 class BinaryArchive {
