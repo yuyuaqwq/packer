@@ -57,7 +57,7 @@ private:
     size_t pos_;
 };
 
-template <class IoStream>
+template <class IoStream = MemoryIoStream>
 class BinaryArchive {
 public:
     BinaryArchive(IoStream& io_stream) : io_stream_{ io_stream }, memory_runtime_{ nullptr } { }
