@@ -94,10 +94,11 @@ public:
         else if constexpr (std::is_floating_point_v<DecayT>) {
             DecayT temp = val;
             
-            if constexpr (std::endian::native == std::endian::little) {
+            if constexpr (std::endian::native == std::endian::big) {
+                // Small endings are more common, so we will convert large endings to small endings
                 temp = detail::RevereseByte(temp);
             }
-            else if constexpr (std::endian::native != std::endian::big) {
+            else if constexpr (std::endian::native != std::endian::little) {
                 static_assert(detail::always_false<T>, "Unsupported byte order!");
             }
             io_stream_.write(reinterpret_cast<char*>(&temp), sizeof(DecayT));
@@ -144,10 +145,11 @@ public:
         else if constexpr (std::is_floating_point_v<DecayT>) {
             DecayT res;
             io_stream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
-            if constexpr (std::endian::native == std::endian::little) {
+            if constexpr (std::endian::native == std::endian::big) {
+                // Small endings are more common, so we will convert large endings to small endings
                 res = detail::RevereseByte(res);
             }
-            else if constexpr (std::endian::native != std::endian::big) {
+            else if constexpr (std::endian::native != std::endian::little) {
                 static_assert(detail::always_false<T>, "Unsupported byte order!");
             }
             return res;
