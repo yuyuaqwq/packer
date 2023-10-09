@@ -85,12 +85,6 @@ void Deserialize(Archive& ar, NonIntrusive& val) {
 
 int main() {
 
-
-    uint8_t buf[10] = { 0 };
-    sezz::algorithm::ZigzagEncoded(5000, buf);
-    int64_t val;
-    sezz::algorithm::ZigzagDecode(&val, buf);
-
     std::fstream fs;
 
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);

@@ -2,6 +2,7 @@
 #define SEZZ_SEZZ_HPP_
 
 #include <vector>
+#include <bit>
 
 #include <sezz/type_traits.hpp>
 #include <sezz/algorithm.hpp>
@@ -81,19 +82,23 @@ public:
         else if constexpr (std::is_integral_v<DecayT>) {
             if constexpr (std::is_signed_v<DecayT>) {
                 uint8_t buf[10];
-                size_t len = algorithm::ZigzagEncoded(val, buf) - buf;
+                size_t len = detail::ZigzagEncoded(val, buf) - buf;
                 io_stream_.write(reinterpret_cast<char*>(buf), len);
             }
             else {
                 uint8_t buf[10];
-                size_t len = algorithm::VarintEncoded(val, buf) - buf;
+                size_t len = detail::VarintEncoded(val, buf) - buf;
                 io_stream_.write(reinterpret_cast<char*>(buf), len);
             }
         }
         else if constexpr (std::is_floating_point_v<DecayT>) {
             DecayT temp = val;
-            if (!algorithm::IsNetworkEndian()) {
-                temp = algorithm::RevereseByte(temp);
+            
+            if constexpr (std::endian::native == std::endian::little) {
+                temp = detail::RevereseByte(temp);
+            }
+            else if constexpr (std::endian::native != std::endian::big) {
+                static_assert(detail::always_false<T>, "Unsupported byte order!");
             }
             io_stream_.write(reinterpret_cast<char*>(&temp), sizeof(DecayT));
             //static_assert(detail::always_false<T>, "This type of floating-point number cannot be serialized!");
@@ -128,19 +133,22 @@ public:
         else if constexpr (std::is_integral_v<DecayT>) {
             int64_t res;
             if constexpr (std::is_signed_v<DecayT>) {
-                size_t len = algorithm::ZigzagDecode(&res, &io_stream_);
+                size_t len = detail::ZigzagDecode(&res, &io_stream_);
                 return res;
             }
             else {
-                size_t len = algorithm::VarintDecode(&res, &io_stream_);
+                size_t len = detail::VarintDecode(&res, &io_stream_);
                 return static_cast<uint64_t>(res);
             }
         }
         else if constexpr (std::is_floating_point_v<DecayT>) {
             DecayT res;
             io_stream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
-            if (!algorithm::IsNetworkEndian()) {
-                res = algorithm::RevereseByte(res);
+            if constexpr (std::endian::native == std::endian::little) {
+                res = detail::RevereseByte(res);
+            }
+            else if constexpr (std::endian::native != std::endian::big) {
+                static_assert(detail::always_false<T>, "Unsupported byte order!");
             }
             return res;
             //static_assert(detail::always_false<T>, "This type of floating-point number cannot be deserialized!");

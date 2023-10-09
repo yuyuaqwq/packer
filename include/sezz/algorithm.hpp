@@ -6,7 +6,7 @@
 
 
 namespace sezz {
-namespace algorithm {
+namespace detail {
 
 uint8_t* VarintEncoded(int64_t val, uint8_t* buf) {
     while (val >= 0x80) {
