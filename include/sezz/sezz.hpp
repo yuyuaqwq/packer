@@ -28,6 +28,7 @@ class MemoryIoStream {
 public:
     MemoryIoStream(size_t size) : buf_(size){
         pos_ = 0;
+        fail_ = false;
     }
 
     void write(const char* buf, size_t size) {
@@ -44,7 +45,8 @@ public:
 
     void read(char* buf, size_t size) {
         if (pos_ + size > buf_.size()) {
-            throw std::runtime_error("Stream data has reached the end.");
+            fail_ = true;
+            return;
         }
         memcpy(buf, &buf_[pos_], size);
         pos_ += size;
@@ -62,9 +64,14 @@ public:
         return buf_.data();
     }
 
+    bool fail() {
+        return fail_;
+    }
+
 private:
     std::vector<uint8_t> buf_;
     size_t pos_;
+    bool fail_;
 };
 
 enum class ArchiveMode {
@@ -92,20 +99,32 @@ public:
         }
         else if constexpr (mode == ArchiveMode::kRaw && std::is_trivially_copyable_v<DecayT>) {
             io_stream_.write(reinterpret_cast<char*>(&val), sizeof(DecayT));
+            if (io_stream_.fail()) {
+                throw std::runtime_error("output stream write fail.");
+            }
         }
         else if constexpr (sizeof(val) == 1) {
             io_stream_.write(reinterpret_cast<char*>(&val), sizeof(val));
+            if (io_stream_.fail()) {
+                throw std::runtime_error("output stream write fail.");
+            }
         }
         else if constexpr (std::is_integral_v<DecayT>) {
             if constexpr (std::is_signed_v<DecayT>) {
                 uint8_t buf[10];
                 size_t len = detail::ZigzagEncoded(val, buf) - buf;
                 io_stream_.write(reinterpret_cast<char*>(buf), len);
+                if (io_stream_.fail()) {
+                    throw std::runtime_error("output stream write fail.");
+                }
             }
             else {
                 uint8_t buf[10];
                 size_t len = detail::VarintEncoded(val, buf) - buf;
                 io_stream_.write(reinterpret_cast<char*>(buf), len);
+                if (io_stream_.fail()) {
+                    throw std::runtime_error("output stream write fail.");
+                }
             }
         }
         else if constexpr (std::is_floating_point_v<DecayT>) {
@@ -144,11 +163,17 @@ public:
         else if constexpr (mode == ArchiveMode::kRaw && std::is_trivially_copyable_v<DecayT>) {
             DecayT res{};
             io_stream_.read((char*)&res, sizeof(DecayT));
+            if (io_stream_.fail()) {
+                throw std::runtime_error("input stream read fail.");
+            }
             return res;
         }
         else if constexpr (sizeof(DecayT) == 1) {
             DecayT res{};
             io_stream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
+            if (io_stream_.fail()) {
+                throw std::runtime_error("input stream read fail.");
+            }
             return res;
         }
         else if constexpr (std::is_integral_v<DecayT>) {
@@ -164,6 +189,9 @@ public:
         }
         else if constexpr (std::is_floating_point_v<DecayT>) {
             DecayT res;
+            if (io_stream_.fail()) {
+                throw std::runtime_error("input stream read fail.");
+            }
             io_stream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
             if constexpr (std::endian::native == std::endian::big) {
                 // Small endings are more common, so we will convert large endings to small endings

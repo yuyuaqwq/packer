@@ -36,6 +36,9 @@ size_t VarintDecode(int64_t* val_ptr, IoStream* stream) {
     size_t len = 0;
     do {
         stream->read((char*)&byte, 1);
+        if (stream->fail()) {
+            throw std::runtime_error("input stream overflow.");
+        }
         result |= static_cast<int64_t>((byte) & ~0x80) << offset;
         offset += 7;
         ++len;
