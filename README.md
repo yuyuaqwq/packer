@@ -14,7 +14,60 @@
     - 基于`varint`/`zigzag`编码＆解码`u/i 16/32/64`
     - 浮点数则在序列化时将其转换为小端序，反序列化时转换为本机字节序，仅支持本机为小端/大端
 
+## 基准
+
+### 环境
+
+CPU: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz   3.70 GHz
+
+RAM: 32.0 GB
+
+Compiler: MSVC - v1929,  /O2
+
+### 测试数据
+
+ntdll.dll - pdber object
+
+RawSize: `417,507 bytes` \* `4000 count` = `1670028000 bytes` ≈ `1.5GB`
+
+- ObjectCount:
+    | std::string | total integral(bool、uint8_t、size_t) |
+    | ----------- | -------- |
+    | 46900000    | 51484000 |
+
+### 结果
+
+#### Serialize
+-   初始IoStream大小为`1024 bytes`：
+    | size               | time      |
+    | ------------------ | --------- |
+    | `1028876000 bytes` | `1557 ms` |
+
+-   初始IoStream大小为`1028876000 bytes`:
+    | size               | time      |
+    | ------------------ | --------- |
+    | `1028876000 bytes` | `1166 ms` |
+
+#### Deserialize
+time: `2685 ms`
+- 构造`std::string`时的`new`，占用了许多反序列化的时间。
+
+
+#### 性能
+| Type                 | Performance(RawSize) |
+| -------------------- | -------------------- |
+| Serialize.init_small | ≈1,022MB/s           |
+| Serialize.init_big   | ≈1,365MB/s           |
+| Deserialize          | ≈593MB/s             |
+
+
+
+#### 不用看
+~~鄙视一下cpp-serializers这个项目，yas测试用的自己的MemoryIoStream，cereal用的std::stringstream，实际性能差距都在这里。~~
+
+
 ## 快速入门
+
 ``` C++
 #include <iostream>
 #include <fstream>

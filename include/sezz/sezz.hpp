@@ -16,6 +16,9 @@ concept serialize_accept = requires(Archive ar, T t) { t.Serialize(ar); };
 template<typename Archive, typename T>
 concept deserialize_accept = requires(Archive ar, T t) { t.Deserialize(ar); };
 
+template<typename T>
+concept statistical_size_accept = requires(T t) { t.StatisticalSize(); };
+
 class MemoryRuntime;
 
 } // namespace detail
@@ -31,8 +34,7 @@ public:
         if (pos_ + size > buf_.size()) {
             buf_.resize((buf_.size() + size) * 2);
         }
-        auto data = &buf_[pos_];
-        memcpy(data, buf, size);
+        memcpy(&buf_[pos_], buf, size);
         pos_ += size;
     }
 
@@ -40,8 +42,7 @@ public:
         if (pos_ + size > buf_.size()) {
             throw std::runtime_error("Stream data has reached the end.");
         }
-        auto data = &buf_[pos_];
-        memcpy(buf, data, size);
+        memcpy(buf, &buf_[pos_], size);
         pos_ += size;
     }
 
@@ -53,12 +54,21 @@ public:
         pos_ = pos;
     }
     
+    uint8_t* data() {
+        return buf_.data();
+    }
+
 private:
     std::vector<uint8_t> buf_;
     size_t pos_;
 };
 
-template <class IoStream = MemoryIoStream>
+enum class ArchiveMode {
+    kCompact,
+    kRaw,
+};
+
+template <class IoStream = MemoryIoStream, ArchiveMode mode = ArchiveMode::kCompact>
 class BinaryArchive {
 public:
     BinaryArchive(IoStream& io_stream) : io_stream_{ io_stream }, memory_runtime_{ nullptr } { }
@@ -75,6 +85,9 @@ public:
         using DecayT = std::decay_t<T>;
         if constexpr (detail::serialize_accept<BinaryArchive, DecayT>) {
             val.Serialize(*this);
+        }
+        else if constexpr (mode == ArchiveMode::kRaw && std::is_trivially_copyable_v<DecayT>) {
+            io_stream_.write(reinterpret_cast<char*>(&val), sizeof(DecayT));
         }
         else if constexpr (sizeof(val) == 1) {
             io_stream_.write(reinterpret_cast<char*>(&val), sizeof(val));
@@ -104,9 +117,6 @@ public:
             io_stream_.write(reinterpret_cast<char*>(&temp), sizeof(DecayT));
             //static_assert(detail::always_false<T>, "This type of floating-point number cannot be serialized!");
         }
-        //else if constexpr (std::is_trivially_copyable_v<DecayT>) {
-        //    io_stream_.write(reinterpret_cast<char*>(&val), sizeof(DecayT));
-        //}
         else {
             Serialize(*this, std::forward<T>(val));
             //printf("types that cannot be serialized: %s\n", typeid(T).name()); throw;
@@ -124,6 +134,12 @@ public:
         if constexpr (detail::deserialize_accept<BinaryArchive, DecayT>) {
             DecayT res{};
             res.Deserialize(*this);
+            return res;
+        }
+        // 可直接内存复制的类型
+        else if constexpr (mode == ArchiveMode::kRaw && std::is_trivially_copyable_v<DecayT>) {
+            DecayT res{};
+            io_stream_.read((char*)&res, sizeof(DecayT));
             return res;
         }
         else if constexpr (sizeof(DecayT) == 1) {
@@ -155,12 +171,6 @@ public:
             return res;
             //static_assert(detail::always_false<T>, "This type of floating-point number cannot be deserialized!");
         }
-        // 可直接内存复制的类型
-        //else if constexpr (std::is_trivially_copyable_v<DecayT>) {
-        //    DecayT res{};
-        //    io_stream_.read((char*)&res, sizeof(DecayT));
-        //    return res;
-        //}
         else {
             return Deserialize<T>(*this);
             //printf("types that cannot be deserialized: %s\n", typeid(T).name()); throw;
