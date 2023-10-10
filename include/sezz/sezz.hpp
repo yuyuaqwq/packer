@@ -31,8 +31,12 @@ public:
     }
 
     void write(const char* buf, size_t size) {
-        if (pos_ + size > buf_.size()) {
-            buf_.resize((buf_.size() + size) * 2);
+        size_t cur_size = buf_.size();
+        while (pos_ + size > cur_size) {
+            cur_size *= 2;
+        }
+        if (cur_size != buf_.size()) {
+            buf_.resize(cur_size);
         }
         memcpy(&buf_[pos_], buf, size);
         pos_ += size;
