@@ -41,7 +41,7 @@
 ### 结果
 
 #### Serialize
-| Init IoStream Buffer Size | Raw Size              | Serialized Size       | Time       |
+| IoStream Init Buffer Size | Raw Size              | Serialized Size       | Time       |
 | ------------------------- | --------------------- | --------------------- | ---------- |
 | `1,024 bytes`             | `1,670,028,000 bytes` | `1,028,876,000 bytes` | `1,557 ms` |
 | `1,028,876,000 bytes`     | `1,670,028,000 bytes` | `1,028,876,000 bytes` | `1,166 ms` |
