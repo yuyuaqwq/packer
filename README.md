@@ -18,22 +18,25 @@
 
 ### 环境
 
-CPU: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz   3.70 GHz
+-   CPU: Intel(R) Core(TM) i7-8700K CPU @ 3.70GHz   3.70 GHz
 
-RAM: 32.0 GB
+-   RAM: 32.0 GB
 
-Compiler: MSVC - v1929,  /O2
+-   Compiler: MSVC - v1929,  /O2
 
 ### 测试数据
 
-ntdll.dll - pdber object
+-   ntdll.dll - pdber object
 
-RawSize: `417,507 bytes` \* `4000 count` = `1670028000 bytes` ≈ `1.5GB`
+-   RawSize: `417,507 bytes` \* `4000 count` = `1670028000 bytes` ≈ `1.5GB`
 
-- ObjectCount:
+-   IoStream: sezz::MemoryIoStream
+
+-   ObjectCount:
     | std::string | total integral(bool、uint8_t、size_t) |
     | ----------- | -------- |
     | 46900000    | 51484000 |
+
 
 ### 结果
 
