@@ -28,7 +28,7 @@
 
 -   ntdll.dll - pdber object
 
--   RawSize: `417,507 bytes` \* `4000 count` = `1670028000 bytes` ≈ `1.5 GB`
+-   RawSize: `417,507 bytes` \* `4,000 count` = `1,670,028,000 bytes` ≈ `1.5 GB`
 
 -   IoStream: `sezz::MemoryIoStream`
 
@@ -41,10 +41,10 @@
 ### 结果
 
 #### Serialize
-| Init IoStream Buffer Size | Serialized size       | Time       |
-| ------------------------- | --------------------- | ---------- |
-| `1,024 bytes`             | `1,028,876,000 bytes` | `1,557 ms` |
-| `1,028,876,000 bytes`     | `1,028,876,000 bytes` | `1,166 ms` |
+| Init IoStream Buffer Size | Raw Size              | Serialized Size       | Time       |
+| ------------------------- | --------------------- | --------------------- | ---------- |
+| `1,024 bytes`             | `1,670,028,000 bytes` | `1,028,876,000 bytes` | `1,557 ms` |
+| `1,028,876,000 bytes`     | `1,670,028,000 bytes` | `1,028,876,000 bytes` | `1,166 ms` |
 
 #### Deserialize
 time: `2,685 ms`
