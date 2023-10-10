@@ -40,8 +40,8 @@ RawSize: `417,507 bytes` \* `4000 count` = `1670028000 bytes` ≈ `1.5GB`
 #### Serialize
 | Init IoStream Size | Serialize size     | Time      |
 | ------------------ | ------------------ | --------- |
-| `1024 bytes`       | `1028876000 bytes` | `1166  ms`|
-| `1028876000 bytes` | `1028876000 bytes` | `1557 ms` |
+| `1024 bytes`       | `1028876000 bytes` | `1557 ms` |
+| `1028876000 bytes` | `1028876000 bytes` | `1166 ms` |
 
 #### Deserialize
 time: `2685 ms`
