@@ -48,7 +48,7 @@
 
 #### Deserialize
 time: `2,685 ms`
-- 构造`std::string`时的`new`，占用了许多反序列化的时间。
+- 构造`std::string`时的`new`，是反序列化耗时的主要原因之一。
 
 
 #### 性能
