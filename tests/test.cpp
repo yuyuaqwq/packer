@@ -55,12 +55,9 @@ public:     // Non intrusive, requiring external access to data members
 namespace sezz {
 // specialization of function templates
 
-template <class Archive, class T>
-    requires std::is_same_v<std::decay_t<T>, NonIntrusive>
-void Serialize(Archive& ar, T& val) {
-    //printf("%s %d", val.str, val.aaa);
+template <class Archive>
+void Serialize(Archive& ar, NonIntrusive& val) {
     ar.Save(val.str, val.aaa);
-    auto& a = ar.GetIoStream();
 }
 
 
