@@ -38,15 +38,10 @@ RawSize: `417,507 bytes` \* `4000 count` = `1670028000 bytes` ≈ `1.5GB`
 ### 结果
 
 #### Serialize
--   初始IoStream大小为`1024 bytes`：
-    | size               | time      |
-    | ------------------ | --------- |
-    | `1028876000 bytes` | `1557 ms` |
-
--   初始IoStream大小为`1028876000 bytes`:
-    | size               | time      |
-    | ------------------ | --------- |
-    | `1028876000 bytes` | `1166 ms` |
+| Init IoStream Size | Serialize size     | Time      |
+| ------------------ | ------------------ | --------- |
+| `1024 bytes`       | `1028876000 bytes` | `1166  ms`|
+| `1028876000 bytes` | `1028876000 bytes` | `1557 ms` |
 
 #### Deserialize
 time: `2685 ms`
