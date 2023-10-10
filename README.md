@@ -28,26 +28,26 @@
 
 -   ntdll.dll - pdber object
 
--   RawSize: `417,507 bytes` \* `4000 count` = `1670028000 bytes` ≈ `1.5GB`
+-   RawSize: `417,507 bytes` \* `4000 count` = `1670028000 bytes` ≈ `1.5 GB`
 
--   IoStream: sezz::MemoryIoStream
+-   IoStream: `sezz::MemoryIoStream`
 
 -   ObjectCount:
     | std::string | total integral(bool、uint8_t、size_t) |
     | ----------- | -------- |
-    | 46900000    | 51484000 |
+    | 46,900,000  | 51,484,000 |
 
 
 ### 结果
 
 #### Serialize
-| Init IoStream Size | Serialize size     | Time      |
-| ------------------ | ------------------ | --------- |
-| `1024 bytes`       | `1028876000 bytes` | `1557 ms` |
-| `1028876000 bytes` | `1028876000 bytes` | `1166 ms` |
+| Init IoStream Buffer Size | Serialized size       | Time       |
+| ------------------------- | --------------------- | ---------- |
+| `1,024 bytes`             | `1,028,876,000 bytes` | `1,557 ms` |
+| `1,028,876,000 bytes`     | `1,028,876,000 bytes` | `1,166 ms` |
 
 #### Deserialize
-time: `2685 ms`
+time: `2,685 ms`
 - 构造`std::string`时的`new`，占用了许多反序列化的时间。
 
 
