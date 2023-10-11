@@ -12,7 +12,7 @@ template <class Archive, class T>
 void Serialize(Archive& ar, T&& val) {
     size_t size = val.size();
     ar.Save(size);
-    ar.GetIoStream().write(val.data(), size);
+    ar.GetOutputStream().write(val.data(), size);
 }
 
 template <class T, class Archive, class DecayT = std::decay_t<T>>
@@ -21,8 +21,8 @@ T Deserialize(Archive& ar) {
     auto size = ar.Load<size_t>();
     DecayT res{};
     res.resize(size);
-    ar.GetIoStream().read(res.data(), size);
-    if (ar.GetIoStream().fail()) {
+    ar.GetInputStream().read(res.data(), size);
+    if (ar.GetInputStream().fail()) {
         throw std::runtime_error("input stream read fail.");
     }
     return res;
