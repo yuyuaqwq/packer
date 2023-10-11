@@ -8,7 +8,7 @@
 namespace sezz {
 namespace detail {
 
-uint8_t* VarintEncoded(int64_t val, uint8_t* buf) {
+constexpr uint8_t* VarintEncoded(int64_t val, uint8_t* buf) {
     while (val >= 0x80) {
         *buf++ = static_cast<uint8_t>(val) | 0x80;
         val >>= 7;
@@ -87,7 +87,7 @@ static const uint8_t gs_bit_reverse_table[] = {
     0x0F, 0x8F, 0x4F, 0xCF, 0x2F, 0xAF, 0x6F, 0xEF, 0x1F, 0x9F, 0x5F, 0xDF, 0x3F, 0xBF, 0x7F, 0xFF
 };
 
-uint32_t Reverse32Bit(uint32_t val) {
+constexpr uint32_t Reverse32Bit(uint32_t val) {
     uint32_t res =
         (static_cast<uint32_t>(gs_bit_reverse_table[val & 0xff]) << 24) |
         (static_cast<uint32_t>(gs_bit_reverse_table[(val >> 8) & 0xff]) << 16) |
@@ -96,7 +96,7 @@ uint32_t Reverse32Bit(uint32_t val) {
     return res;
 }
 
-uint64_t Reverse64Bit(uint64_t val) {
+constexpr uint64_t Reverse64Bit(uint64_t val) {
     uint64_t res =
         (static_cast<uint64_t>(gs_bit_reverse_table[val & 0xff]) << 56) |
         (static_cast<uint64_t>(gs_bit_reverse_table[(val >> 8) & 0xff]) << 48) |
@@ -109,16 +109,16 @@ uint64_t Reverse64Bit(uint64_t val) {
     return res;
 }
 
-uint32_t Reverse4Byte(uint32_t val) {
+constexpr uint32_t Reverse4Byte(uint32_t val) {
     return (val << 24) | ((val & 0xff00) << 8) | ((val & 0xff0000) >> 8) | (val >> 24);
 }
 
-uint64_t Reverse8Byte(uint64_t val) {
+constexpr uint64_t Reverse8Byte(uint64_t val) {
     return (val << 56) | ((val & 0xff00) << 40) | ((val & 0xff0000) << 24) | ((val & 0xff000000) << 8) | ((val & 0xff00000000) >> 8) | ((val & 0xff0000000000) >> 24) | ((val & 0xff000000000000) >> 40) | (val >> 56);
 }
 
 template <typename T>
-T RevereseByte(T val) {
+constexpr T RevereseByte(T val) {
     if constexpr (sizeof(T) == 4) {
         uint32_t res = Reverse4Byte(*reinterpret_cast<uint32_t*>(&val));
         return *reinterpret_cast<T*>(&res);
