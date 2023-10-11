@@ -124,7 +124,7 @@ public:
     }
 
     void LoadVersion() {
-        version_ = Load<uint64_t>();
+        version_ = Load<Version>();
     }
 
     Version GetVersion() {
