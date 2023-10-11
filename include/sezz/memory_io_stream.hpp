@@ -16,7 +16,6 @@ public:
     }
 protected:
     bool fail_;
-    size_t pos_;
 };
 
 class MemoryInputStream : virtual public MemoryIoBase {
@@ -44,6 +43,7 @@ public:
 
 private:
     std::vector<uint8_t>* in_buf_;
+    size_t pos_;
 };
 
 class MemoryOutputStream : virtual public MemoryIoBase {
@@ -78,6 +78,7 @@ public:
 
 protected:
     std::vector<uint8_t> out_buf_;
+    size_t pos_;
 };
 
 class MemoryIoStream : public MemoryInputStream, public MemoryOutputStream {
