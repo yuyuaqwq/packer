@@ -99,32 +99,20 @@ public:
         }
         else if constexpr (mode == ArchiveMode::kRaw && std::is_trivially_copyable_v<DecayT>) {
             io_stream_.write(reinterpret_cast<char*>(&val), sizeof(DecayT));
-            if (io_stream_.fail()) {
-                throw std::runtime_error("output stream write fail.");
-            }
         }
         else if constexpr (sizeof(val) == 1) {
             io_stream_.write(reinterpret_cast<char*>(&val), sizeof(val));
-            if (io_stream_.fail()) {
-                throw std::runtime_error("output stream write fail.");
-            }
         }
         else if constexpr (std::is_integral_v<DecayT>) {
             if constexpr (std::is_signed_v<DecayT>) {
                 uint8_t buf[10];
                 size_t len = detail::ZigzagEncoded(val, buf) - buf;
                 io_stream_.write(reinterpret_cast<char*>(buf), len);
-                if (io_stream_.fail()) {
-                    throw std::runtime_error("output stream write fail.");
-                }
             }
             else {
                 uint8_t buf[10];
                 size_t len = detail::VarintEncoded(val, buf) - buf;
                 io_stream_.write(reinterpret_cast<char*>(buf), len);
-                if (io_stream_.fail()) {
-                    throw std::runtime_error("output stream write fail.");
-                }
             }
         }
         else if constexpr (std::is_floating_point_v<DecayT>) {
