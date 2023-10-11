@@ -1,7 +1,6 @@
 ﻿#ifndef SEZZ_SEZZ_HPP_
 #define SEZZ_SEZZ_HPP_
 
-#include <vector>
 #include <bit>
 
 #include <sezz/type_traits.hpp>
