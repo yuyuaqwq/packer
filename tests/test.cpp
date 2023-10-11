@@ -89,7 +89,7 @@ int main() {
     sezz::BinaryOutputArchive<std::ostream> outar(fs);
 
     // Optional version number
-    // outar.SaveVersion(1);
+    outar.SaveVersion(1);
 
     double test_double = 114.514;
     outar.Save(test_double);
@@ -156,20 +156,12 @@ int main() {
 
 
     fs.seekg(0);
-    //std::cout << fs.tellg() << " " << fs.tellp() << std::endl;
-
-    //char buf[1000];
-    //fs.read(buf, 1000);
-    //std::cout << fs.tellg() << " " << fs.tellp() << std::endl;
-
-    //if (fs.fail()) {
-    //    printf("??");
-    //}
     sezz::BinaryInputArchive<std::istream> inar(fs);
 
-    // Optional version number
-    //inar.LoadVersion();
-
+    // Optional version number, 
+    // If SaveVersion() is called, please ensure loading first
+    inar.LoadVersion();
+    // Please use GetVersion() where version control is required
 
     auto test_double_de = inar.Load<double>();
 
@@ -201,8 +193,6 @@ int main() {
     auto test_invasive_de = inar.Load<Invasive>();
 
     auto test_non_intrusive_de = inar.Load<NonIntrusive>();
-
-    auto aadad = inar.Load<double>();
 
      //NonIntrusive test_non_intrusive_de;
      //ar.Load(fs, test_non_intrusive_de);
