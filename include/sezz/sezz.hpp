@@ -30,7 +30,9 @@ enum class ArchiveMode {
     kRaw,
 };
 
-template <class InputStream = MemoryInputStream, ArchiveMode mode = ArchiveMode::kCompact>
+template <class InputStream = MemoryInputStream, 
+    class Version = uint64_t, 
+    ArchiveMode mode = ArchiveMode::kCompact>
 class BinaryInputArchive {
 public:
     BinaryInputArchive(InputStream& istream) : istream_{ istream }, memory_runtime_{ nullptr }, version_{ 0 } { }
@@ -125,17 +127,19 @@ public:
         version_ = Load<uint64_t>();
     }
 
-    uint64_t GetVersion() {
+    Version GetVersion() {
         return version_;
     }
 
 private:
     InputStream& istream_;
     detail::MemoryRuntime* memory_runtime_;
-    uint64_t version_;
+    Version version_;
 };
 
-template <class OutputStream = MemoryOutputStream, ArchiveMode mode = ArchiveMode::kCompact>
+template <class OutputStream = MemoryOutputStream,
+    class Version = uint64_t,
+    ArchiveMode mode = ArchiveMode::kCompact>
 class BinaryOutputArchive {
 public:
     BinaryOutputArchive(OutputStream& ostream) : ostream_{ ostream }, memory_runtime_{ nullptr }, version_{ 0 } {  }
@@ -213,19 +217,19 @@ public:
         }
     }
 
-    void SaveVersion(uint64_t version) {
+    void SaveVersion(Version&& version) {
         version_ = version;
         Save(version_);
     }
 
-    uint64_t GetVersion() {
+    Version GetVersion() {
         return version_;
     }
 
 private:
     OutputStream& ostream_;
     detail::MemoryRuntime* memory_runtime_;
-    uint64_t version_;
+    Version version_;
 };
 
 
