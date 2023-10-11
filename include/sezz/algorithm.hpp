@@ -28,8 +28,8 @@ uint8_t* VarintDecode(int64_t* val_ptr, uint8_t* buf) {
     return buf;
 }
 
-template <typename IoStream> 
-size_t VarintDecode(int64_t* val_ptr, IoStream* stream) {
+template <typename InputStream> 
+size_t VarintDecode(int64_t* val_ptr, InputStream* stream) {
     uint8_t offset = 0;
     uint64_t result = 0;
     uint8_t byte;
@@ -58,8 +58,8 @@ uint8_t* ZigzagDecode(int64_t* val_ptr, uint8_t* buf) {
     return buf;
 }
 
-template <typename IoStream>
-size_t ZigzagDecode(int64_t* val_ptr, IoStream* stream) {
+template <typename InputStream>
+size_t ZigzagDecode(int64_t* val_ptr, InputStream* stream) {
     uint64_t val;
     auto size = VarintDecode(reinterpret_cast<int64_t*>(&val), stream);
     *val_ptr = static_cast<int64_t>((val >> 1) ^ -static_cast<int64_t>(val & 1));

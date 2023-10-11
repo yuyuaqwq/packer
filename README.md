@@ -14,6 +14,7 @@
 - 字节序无关
     - 基于`varint`/`zigzag`编码＆解码`u/i 16/32/64`
     - 浮点数则在序列化时将其转换为小端序，反序列化时转换为本机字节序，仅支持本机为小端/大端
+- 可选的版本号控制
 
 ## 基准
 
@@ -78,18 +79,18 @@ time: `2,685 ms`
 int main() {
     std::fstream fs;
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
-
-    sezz::BinaryArchive<std::iostream> ar(fs);
+    sezz::BinaryOutputArchive<std::iostream> outar(fs);
 
     std::unordered_map<std::string, std::string> test_map {
         { "pair_key_1", "pair_value_1" },
         { "pair_key_2", "pair_value_2" }
     };
-    ar.Save(test_map);
+    outar.Save(test_map);
 
     fs.seekg(0);
+    sezz::BinaryInputArchive<std::iostream> inar(fs);
 
-    auto test_map_de = ar.Load<std::unordered_map<std::string, std::string>>();
+    auto test_map_de = inar.Load<std::unordered_map<std::string, std::string>>();
 }
 ```
 

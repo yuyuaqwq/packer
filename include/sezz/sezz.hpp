@@ -159,10 +159,10 @@ public:
         }
         else if constexpr (std::is_floating_point_v<DecayT>) {
             DecayT res;
+            istream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
             if (istream_.fail()) {
                 throw std::runtime_error("input stream read fail.");
             }
-            istream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
             if constexpr (std::endian::native == std::endian::big) {
                 // Small endings are more common, so we will convert large endings to small endings
                 res = detail::RevereseByte(res);

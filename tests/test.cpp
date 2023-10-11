@@ -86,7 +86,7 @@ int main() {
 
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
     
-    sezz::BinaryOutputArchive<std::iostream> outar(fs);
+    sezz::BinaryOutputArchive<std::ostream> outar(fs);
 
     // Optional version number
     // outar.SaveVersion(1);
@@ -156,8 +156,16 @@ int main() {
 
 
     fs.seekg(0);
+    //std::cout << fs.tellg() << " " << fs.tellp() << std::endl;
 
-    sezz::BinaryInputArchive<std::iostream> inar(fs);
+    //char buf[1000];
+    //fs.read(buf, 1000);
+    //std::cout << fs.tellg() << " " << fs.tellp() << std::endl;
+
+    //if (fs.fail()) {
+    //    printf("??");
+    //}
+    sezz::BinaryInputArchive<std::istream> inar(fs);
 
     // Optional version number
     //inar.LoadVersion();
@@ -193,6 +201,8 @@ int main() {
     auto test_invasive_de = inar.Load<Invasive>();
 
     auto test_non_intrusive_de = inar.Load<NonIntrusive>();
+
+    auto aadad = inar.Load<double>();
 
      //NonIntrusive test_non_intrusive_de;
      //ar.Load(fs, test_non_intrusive_de);
