@@ -83,13 +83,12 @@ void Deserialize(Archive& ar, NonIntrusive& val) {
 int main() {
 
     std::fstream fs;
-
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
-    
-    sezz::BinaryOutputArchive<std::ostream> outar(fs);
+    sezz::BinaryOutputArchive outar(fs);
 
     // Optional version number
     outar.SaveVersion(1);
+
 
     double test_double = 114.514;
     outar.Save(test_double);
@@ -112,8 +111,6 @@ int main() {
     int* test_raw_ptr = test_unique.get();
     outar.Save(test_raw_ptr);
 
-
-
     std::array<int, 100> test_array = { 1123070,13213,341432423,432234,42334324,43141 };
     outar.Save(test_array);
 
@@ -128,11 +125,6 @@ int main() {
         { "pair_key_2", "pair_value_2" }
     };
     outar.Save(test_map);
-
-
- 
-    //char8_t test;
-    //ar.Save(test);
 
     std::vector<std::string> test_vector{ 
         "vector_1", 
@@ -155,43 +147,31 @@ int main() {
     outar.Save(test_non_intrusive);
 
 
+
     fs.seekg(0);
-    sezz::BinaryInputArchive<std::istream> inar(fs);
+    sezz::BinaryInputArchive inar(fs);
 
     // Optional version number, 
     // If SaveVersion() is called, please ensure loading first
     inar.LoadVersion();
     // Please use GetVersion() where version control is required
 
+
     auto test_double_de = inar.Load<double>();
-
     auto test_float_de = inar.Load<float>();
-
     auto test_shared1_de = inar.Load<std::shared_ptr<int>>();
-
     auto test_shared2_de = inar.Load<std::shared_ptr<int>>();
-
     auto test_weak_de = inar.Load<std::weak_ptr<int>>();
-
     auto test_unique_de = inar.Load<std::unique_ptr<int>>();
-
     auto test_raw_ptr_de = inar.Load<int*>();
-
-
     auto test_array_de = inar.Load<std::array<int, 100>>();
-
     auto test_tuple_de = inar.Load<std::tuple<std::string, int>>();
-
     auto test_str_de = inar.Load<std::string>();
     // match based on return value or parameters
     auto test_map_de = inar.Load<std::map<std::string, std::string>>();
-
     auto test_vector_de = inar.Load<std::vector<std::string>>();
-
     auto test_vector_de2 = inar.Load<std::vector<std::vector<std::string>>>();
-
     auto test_invasive_de = inar.Load<Invasive>();
-
     auto test_non_intrusive_de = inar.Load<NonIntrusive>();
 
      //NonIntrusive test_non_intrusive_de;

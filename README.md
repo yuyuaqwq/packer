@@ -79,7 +79,7 @@ time: `2,685 ms`
 int main() {
     std::fstream fs;
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
-    sezz::BinaryOutputArchive<std::iostream> outar(fs);
+    sezz::BinaryOutputArchive outar(fs);
 
     std::unordered_map<std::string, std::string> test_map {
         { "pair_key_1", "pair_value_1" },
@@ -88,7 +88,7 @@ int main() {
     outar.Save(test_map);
 
     fs.seekg(0);
-    sezz::BinaryInputArchive<std::iostream> inar(fs);
+    sezz::BinaryInputArchive inar(fs);
 
     auto test_map_de = inar.Load<std::unordered_map<std::string, std::string>>();
 }
