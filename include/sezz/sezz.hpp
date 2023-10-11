@@ -6,6 +6,7 @@
 
 #include <sezz/type_traits.hpp>
 #include <sezz/algorithm.hpp>
+#include <sezz/memory_io_stream.hpp>
 
 namespace sezz {
 
@@ -22,87 +23,6 @@ concept statistical_size_accept = requires(T t) { t.StatisticalSize(); };
 class MemoryRuntime;
 
 } // namespace detail
-
-
-class MemoryInputStream {
-public:
-    MemoryInputStream(uint8_t* buf, size_t size) : buf_{ buf }, size_{ size }{
-        pos_ = 0;
-        fail_ = false;
-    }
-
-    void read(char* buf, size_t size) {
-        if (pos_ + size > size_) {
-            fail_ = true;
-            return;
-        }
-        memcpy(buf, &buf_[pos_], size);
-        pos_ += size;
-    }
-
-    size_t tellg() {
-        return pos_;
-    }
-
-    void seekg(size_t pos) {
-        pos_ = pos;
-    }
-    
-    uint8_t* data() {
-        return buf_;
-    }
-
-    bool fail() {
-        return fail_;
-    }
-
-private:
-    uint8_t* buf_;
-    size_t size_;
-    size_t pos_;
-    bool fail_;
-};
-
-class MemoryOutputStream {
-public:
-    MemoryOutputStream(size_t size) : buf_(size) {
-        pos_ = 0;
-        fail_ = false;
-    }
-
-    void write(const char* buf, size_t size) {
-        size_t cur_size = buf_.size();
-        while (pos_ + size > cur_size) {
-            cur_size *= 2;
-        }
-        if (cur_size != buf_.size()) {
-            buf_.resize(cur_size);
-        }
-        memcpy(&buf_[pos_], buf, size);
-        pos_ += size;
-    }
-
-    size_t tellp() {
-        return pos_;
-    }
-
-    void seekp(size_t pos) {
-        pos_ = pos;
-    }
-
-    uint8_t* data() {
-        return buf_.data();
-    }
-
-    bool fail() {
-        return fail_;
-    }
-
-private:
-    std::vector<uint8_t> buf_;
-    size_t pos_;
-    bool fail_;
-};
 
 
 enum class ArchiveMode {
