@@ -127,7 +127,7 @@ public:
         version_ = Load<Version>();
     }
 
-    Version GetVersion() {
+    const Version& GetVersion() const noexcept {
         return version_;
     }
 
@@ -222,7 +222,7 @@ public:
         Save(version_);
     }
 
-    Version GetVersion() {
+    const Version& GetVersion() const noexcept {
         return version_;
     }
 
