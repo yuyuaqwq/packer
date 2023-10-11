@@ -82,9 +82,6 @@ void Deserialize(Archive& ar, NonIntrusive& val) {
 
 int main() {
 
-    uint8_t buf[10];
-    auto a = sezz::detail::Reverse4Byte(100);
-
     std::fstream fs;
     fs.open("test.bin", std::ios::binary | std::ios::out | std::ios::in | std::ios::trunc);
     sezz::BinaryOutputArchive outar(fs);
