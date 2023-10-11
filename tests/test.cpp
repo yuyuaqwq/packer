@@ -47,8 +47,8 @@ private:
 
 class NonIntrusive {
 public:     // Non intrusive, requiring external access to data members
-    std::string str;
-    int aaa;
+    std::string str = "";
+    int aaa = 0;
 };
 
 

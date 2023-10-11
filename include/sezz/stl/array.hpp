@@ -32,7 +32,7 @@ template <class T, class Archive, class DecayT = std::decay_t<T>>
 T Deserialize(Archive& ar) {
     auto size = ar.Load<size_t>();
     DecayT res{ 0 };
-    for (int64_t i = 0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         res[i] = ar.Load<typename DecayT::value_type>();
     }
     return res;

@@ -17,7 +17,7 @@ template <class T, class Archive>
 T DeserializeIndex(Archive& ar) {
     T res{};
     auto size = ar.Load<size_t>();
-    for (int64_t i = 0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         res.emplace(ar.Load<typename T::value_type>());
     }
     return res;

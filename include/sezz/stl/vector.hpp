@@ -22,7 +22,7 @@ T Deserialize(Archive& ar) {
     auto size = ar.Load<size_t>();
     DecayT res;
     res.reserve(size);
-    for (int64_t i = 0; i < size; i++) {
+    for (size_t i = 0; i < size; i++) {
         res.emplace_back(ar.Load<typename DecayT::value_type>());
     }
     return res;
