@@ -57,7 +57,7 @@ time: `2,685 ms`
 | Type                 | Performance(RawSize) |
 | -------------------- | -------------------- |
 | Serialize.init_small | ≈1,022MB/s           |
-| Serialize.init_big   | ≈1,365MB/s           |
+| Serialize.init_large | ≈1,365MB/s           |
 | Deserialize          | ≈593MB/s             |
 
 
