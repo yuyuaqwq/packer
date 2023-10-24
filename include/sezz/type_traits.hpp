@@ -45,6 +45,14 @@ using place_t = char;
 template <class>
 constexpr bool always_false = false;
 
+template<typename>
+struct error_type_t {
+    [[deprecated]] static constexpr bool always_false = false;
+};
+template<typename T>
+constexpr bool error_type_v = error_type_t<T>::always_false;
+
+
 } // namespace detail
 } // namespace sezz
 
