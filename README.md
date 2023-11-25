@@ -16,7 +16,7 @@
     - 浮点数则在序列化时将其转换为小端序，反序列化时转换为本机字节序，仅支持本机为小端/大端
 - 可选的版本号控制
 
-## 基准
+## 表现
 
 ### 环境
 
@@ -57,7 +57,7 @@ time: `2,685 ms`
 | Type                 | Performance(RawSize) |
 | -------------------- | -------------------- |
 | Serialize.init_small | ≈1,022MB/s           |
-| Serialize.init_big   | ≈1,365MB/s           |
+| Serialize.init_large | ≈1,365MB/s           |
 | Deserialize          | ≈593MB/s             |
 
 

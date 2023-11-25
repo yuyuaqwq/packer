@@ -89,15 +89,15 @@ public:
                 res = detail::RevereseByte(res);
             }
             else if constexpr (std::endian::native != std::endian::little) {
-                static_assert(detail::always_false<T>, "Unsupported byte order!");
+                static_assert(detail::error_type_v<T>, "Unsupported byte order!");
             }
             return res;
-            //static_assert(detail::always_false<T>, "This type of floating-point number cannot be deserialized!");
+            //static_assert(detail::error_type_v<T>, "This type of floating-point number cannot be deserialized!");
         }
         else {
             return Deserialize<T>(*this);
             //printf("types that cannot be deserialized: %s\n", typeid(T).name()); throw;
-            //static_assert(detail::always_false<T>, "types that cannot be deserialized.");
+            //static_assert(detail::error_type_v<T>, "types that cannot be deserialized.");
         }
     }
 
@@ -184,15 +184,15 @@ public:
                 temp = detail::RevereseByte(temp);
             }
             else if constexpr (std::endian::native != std::endian::little) {
-                static_assert(detail::always_false<T>, "Unsupported byte order!");
+                static_assert(detail::error_type_v<T>, "Unsupported byte order!");
             }
             ostream_.write(reinterpret_cast<char*>(&temp), sizeof(DecayT));
-            //static_assert(detail::always_false<T>, "This type of floating-point number cannot be serialized!");
+            //static_assert(detail::error_type_v<T>, "This type of floating-point number cannot be serialized!");
         }
         else {
             Serialize(*this, std::forward<T>(val));
             //printf("types that cannot be serialized: %s\n", typeid(T).name()); throw;
-            //static_assert(detail::always_false<T>, "types that cannot be serialized.");
+            //static_assert(detail::error_type_v<T>, "types that cannot be serialized.");
         }
     }
 
