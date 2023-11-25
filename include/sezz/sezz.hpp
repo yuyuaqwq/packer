@@ -53,7 +53,7 @@ public:
         // 可直接内存复制的类型
         else if constexpr (mode == ArchiveMode::kRaw && std::is_trivially_copyable_v<DecayT>) {
             DecayT res{};
-            istream_.read((char*)&res, sizeof(DecayT));
+            istream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
             if (istream_.fail()) {
                 throw std::runtime_error("input stream read fail.");
             }
