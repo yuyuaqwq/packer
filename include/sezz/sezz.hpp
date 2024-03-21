@@ -7,13 +7,6 @@
 #include <sezz/detail/algorithm.hpp>
 
 namespace sezz {
-
-namespace detail {
-class MemoryRuntime;
-
-} // namespace detail
-
-
 enum class ArchiveMode {
     kCompact,
     kRaw,
@@ -25,13 +18,6 @@ template <typename InputStream = MemoryInputStream,
 class BinaryInputArchive {
 public:
     BinaryInputArchive(InputStream& istream) : istream_{ istream }, memory_runtime_{ nullptr }, version_{ 0 } { }
-
-    ~BinaryInputArchive() {
-        if (memory_runtime_) {
-            delete memory_runtime_;
-            memory_runtime_ = nullptr;
-        }
-    }
 
     template <typename T>
     T Load() {
@@ -61,17 +47,6 @@ public:
         return istream_;
     }
 
-    detail::MemoryRuntime*& memory_runtime() {
-        return memory_runtime_;
-    }
-
-    void ClearMemoryRuntimeContext() {
-        if (memory_runtime_) {
-            delete memory_runtime_;
-            memory_runtime_ = nullptr;
-        }
-    }
-
     void LoadVersion() {
         version_ = Load<Version>();
     }
@@ -82,7 +57,6 @@ public:
 
 private:
     InputStream& istream_;
-    detail::MemoryRuntime* memory_runtime_;
     Version version_;
 };
 
@@ -92,15 +66,6 @@ template <typename OutputStream = MemoryOutputStream,
 class BinaryOutputArchive {
 public:
     BinaryOutputArchive(OutputStream& ostream) : ostream_{ ostream }, memory_runtime_{ nullptr }, version_{ 0 } {  }
-
-    ~BinaryOutputArchive() {
-        if (memory_runtime_) {
-            delete memory_runtime_;
-            memory_runtime_ = nullptr;
-        }
-    }
-
-
 
     template <typename T>
     void Save(const T& val) {
@@ -124,17 +89,6 @@ public:
         return ostream_;
     }
 
-    detail::MemoryRuntime*& memory_runtime() {
-        return memory_runtime_;
-    }
-
-    void ClearMemoryRuntimeContext() {
-        if (memory_runtime_) {
-            delete memory_runtime_;
-            memory_runtime_ = nullptr;
-        }
-    }
-
     void SaveVersion(Version&& version) {
         version_ = version;
         Save(version_);
@@ -146,7 +100,6 @@ public:
 
 private:
     OutputStream& ostream_;
-    detail::MemoryRuntime* memory_runtime_;
     Version version_;
 };
 

@@ -4,16 +4,18 @@
 #include <sezz/detail/sezz_decl.hpp>
 
 namespace sezz {
+template <typename T>
+struct Serializer<T*> {
+    static_assert(always_false<T>, "Do not serialize pointers!");
 
-template <typename OutputArchive, typename T>
-void SerializeTo(OutputArchive& ar, const T& val) {
-    Serializer<T>{}.Serialize(ar, val);
-}
+    using Type = T*;
 
-template <typename InputArchive, typename T>
-void DeserializeTo(InputArchive& ar, T* val) {
-    Serializer<T>{}.Deserialize(ar, val);
-}
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const T& val) const {}
+
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, T* out) const {}
+};
 
 class MemoryIoBase {
 public:

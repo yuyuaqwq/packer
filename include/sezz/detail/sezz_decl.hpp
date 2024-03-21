@@ -16,4 +16,14 @@ struct Serializer {
     template<typename InputArchive>
     constexpr void Deserialize(InputArchive& ar, T* out) const {}
 };
+
+template <typename OutputArchive, typename T>
+void SerializeTo(OutputArchive& ar, const T& val) {
+    Serializer<T>{}.Serialize(ar, val);
+}
+
+template <typename InputArchive, typename T>
+void DeserializeTo(InputArchive& ar, T* val) {
+    Serializer<T>{}.Deserialize(ar, val);
+}
 }   // namespace sezz
