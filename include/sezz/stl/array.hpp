@@ -1,43 +1,30 @@
 #ifndef SEZZ_STL_ARRAY_HPP_
 #define SEZZ_STL_ARRAY_HPP_
 
-#include <sezz/type_traits.hpp>
 #include <array>
 
 namespace sezz {
-namespace detail {
-template <typename T>
-struct is_std_array : std::false_type {};
+template<typename T, size_t kSize>
+struct Serializer<std::array<T, kSize>> {
+    using Array = std::array<T, kSize>;
 
-template <typename T, std::size_t N>
-struct is_std_array<std::array<T, N>> : std::true_type {};
-
-template <typename T>
-constexpr bool is_std_array_v = is_std_array<T>::value;
-} // namespace detail
-
-
-template <class Archive, class T, class DecayT = std::decay_t<T>>
-    requires detail::is_std_array_v<DecayT>
-void Serialize(Archive& ar, T& val) {
-    size_t size = val.size();
-    ar.Save(size);
-    for (auto& v : val) {
-        ar.Save(v);
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const Array& val) const {
+        size_t size = val.size();
+        ar.Save(size);
+        for (auto& v : val) {
+            ar.Save(v);
+        }
     }
-}
 
-template <class T, class Archive, class DecayT = std::decay_t<T>>
-    requires detail::is_std_array_v<DecayT>
-T Deserialize(Archive& ar) {
-    auto size = ar.Load<size_t>();
-    DecayT res{ 0 };
-    for (size_t i = 0; i < size; i++) {
-        res[i] = ar.Load<typename DecayT::value_type>();
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, Array* out) const {
+        auto size = ar.Load<size_t>();
+        for (size_t i = 0; i < size; i++) {
+            out->at(i) = ar.Load<std::ranges::range_value_t<Array>>();
+        }
     }
-    return res;
-}
-
+};
 } // namespace sezz
 
 

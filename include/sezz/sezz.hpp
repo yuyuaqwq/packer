@@ -19,8 +19,8 @@ enum class ArchiveMode {
     kRaw,
 };
 
-template <class InputStream = MemoryInputStream, 
-    class Version = uint64_t, 
+template <typename InputStream = MemoryInputStream,
+    typename Version = uint64_t,
     ArchiveMode kMode = ArchiveMode::kCompact>
 class BinaryInputArchive {
 public:
@@ -33,7 +33,7 @@ public:
         }
     }
 
-    template <class T>
+    template <typename T>
     T Load() {
         T res{};
         // 可直接内存复制的类型
@@ -52,7 +52,7 @@ public:
         return res;
     }
 
-    template <class... Types>
+    template <typename... Types>
     void Load(Types&&... bufs) {
         ((bufs = Load<Types>()), ...);
     }
@@ -86,8 +86,8 @@ private:
     Version version_;
 };
 
-template <class OutputStream = MemoryOutputStream,
-    class Version = uint64_t,
+template <typename OutputStream = MemoryOutputStream,
+    typename Version = uint64_t,
     ArchiveMode kMode = ArchiveMode::kCompact>
 class BinaryOutputArchive {
 public:
@@ -102,7 +102,7 @@ public:
 
 
 
-    template <class T>
+    template <typename T>
     void Save(const T& val) {
         if constexpr (
             (kMode == ArchiveMode::kRaw && std::is_trivially_copyable_v<T>) ||
@@ -115,7 +115,7 @@ public:
         }
     }
 
-    template <class... Types>
+    template <typename... Types>
     void Save(const Types&... vals) {
         (Save(vals), ...);
     }
