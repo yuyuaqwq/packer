@@ -1,5 +1,5 @@
-#ifndef SEZZ_STL_STRING_HPP_
-#define SEZZ_STL_STRING_HPP_
+#ifndef SEZZ_STL_VECTOR_HPP_
+#define SEZZ_STL_VECTOR_HPP_
 
 #include <sezz/detail/sezz_decl.hpp>
 #include <vector>
@@ -14,7 +14,9 @@ struct Serializer<std::vector<T, Alloc>> {
     constexpr void Serialize(OutputArchive& ar, const Type& val) const {
         size_t size = val.size() * sizeof(T);
         ar.Save(size);
-        ar.ostream().write(val.data(), size);
+        for (auto& item : val) {
+            ar.Save(item);
+        }
         if (ar.ostream().fail()) {
             throw std::runtime_error("input stream read fail.");
         }
@@ -24,8 +26,7 @@ struct Serializer<std::vector<T, Alloc>> {
     constexpr void Deserialize(InputArchive& ar, Type* out) const {
         auto size = ar.Load<size_t>();
         out->resize(size / sizeof(T));
-        ar.istream().read(out->data(), size);
-        for (auto& o : out) {
+        for (auto& o : *out) {
             std::construct_at(&o, ar.Load<T>());
         }
     }
@@ -33,4 +34,4 @@ struct Serializer<std::vector<T, Alloc>> {
 } // namespace sezz
 
 
-#endif // SEZZ_STL_STRING_HPP_
+#endif // SEZZ_STL_VECTOR_HPP_

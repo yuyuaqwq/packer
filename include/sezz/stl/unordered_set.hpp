@@ -1,5 +1,5 @@
-#ifndef SEZZ_STL_MAP_HPP_
-#define SEZZ_STL_MAP_HPP_
+#ifndef SEZZ_STL_UNORDERED_SET_HPP_
+#define SEZZ_STL_UNORDERED_SET_HPP_
 
 #include <sezz/detail/sezz_decl.hpp>
 #include <unordered_set>
@@ -30,4 +30,4 @@ struct Serializer<std::unordered_set<Key, Hasher, KeyEq, Alloc>> {
 } // namespace sezz
 
 
-#endif // SEZZ_STL_MAP_HPP_
+#endif // SEZZ_STL_UNORDERED_SET_HPP_

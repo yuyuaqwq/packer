@@ -1,5 +1,5 @@
-#ifndef SEZZ_STL_MAP_HPP_
-#define SEZZ_STL_MAP_HPP_
+#ifndef SEZZ_STL_UNORDERED_MAP_HPP_
+#define SEZZ_STL_UNORDERED_MAP_HPP_
 
 #include <sezz/stl/pair.hpp>
 #include <unordered_map>
@@ -30,4 +30,4 @@ struct Serializer<std::unordered_map<Key, Val, Hasher, KeyEq, Alloc>> {
 } // namespace sezz
 
 
-#endif // SEZZ_STL_MAP_HPP_
+#endif // SEZZ_STL_UNORDERED_MAP_HPP_
