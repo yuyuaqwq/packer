@@ -2,8 +2,6 @@
 #define SEZZ_ALGORITHM_HPP_
 
 #include <stdint.h>
-#include <sezz/type_traits.hpp>
-
 
 namespace sezz {
 namespace detail {
@@ -128,7 +126,7 @@ constexpr T RevereseByte(T val) {
         return *reinterpret_cast<T*>(&res);
     }
     else {
-        static_assert(detail::always_false<T>, "Types that cannot be reversed.");
+        static_assert(always_false<T>, "Types that cannot be reversed.");
     }
 }
 

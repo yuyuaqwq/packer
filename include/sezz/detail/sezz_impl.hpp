@@ -1,9 +1,30 @@
-#ifndef SEZZ_MEMORY_IO_STREAM_HPP_
-#define SEZZ_MEMORY_IO_STREAM_HPP_
-
+#pragma once
+#include <concepts>
 #include <vector>
 
 namespace sezz {
+template <class>
+constexpr bool always_false = false;
+
+template <class T>
+struct Serializer {
+	static_assert(always_false<T>, "You haven't specialized the \"Serializer\" for this type T yet!");
+	template<typename OutputArchive>
+	constexpr void Serialize(OutputArchive& ar, const T& val) const {}
+	template<typename InputArchive>
+	constexpr void Deserialize(InputArchive& ar, T* out) const {}
+};
+
+template <class OutputArchive, class T>
+void SerializeTo(OutputArchive& ar, const T& val) {
+	Serializer<T>{}.Serialize(ar, val);
+}
+
+template <class InputArchive, class T>
+void DeserializeTo(InputArchive& ar, T* val) {
+	Serializer<T>{}.Deserialize(ar, val);
+}
+
 
 class MemoryIoBase {
 public:
@@ -87,7 +108,4 @@ public:
 
     }
 };
-
 }
-
-#endif // #ifndef SEZZ_MEMORY_IO_STREAM_HPP_

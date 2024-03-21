@@ -3,22 +3,12 @@
 
 #include <bit>
 
-#include <sezz/type_traits.hpp>
-#include <sezz/algorithm.hpp>
-#include <sezz/memory_io_stream.hpp>
+#include <sezz/detail/sezz_impl.hpp>
+#include <sezz/detail/algorithm.hpp>
 
 namespace sezz {
 
 namespace detail {
-
-template<typename Archive, typename T>
-concept serialize_accept = requires(Archive ar, T t) { t.Serialize(ar); };
-template<typename Archive, typename T>
-concept deserialize_accept = requires(Archive ar, T t) { t.Deserialize(ar); };
-
-template<typename T>
-concept statistical_size_accept = requires(T t) { t.StatisticalSize(); };
-
 class MemoryRuntime;
 
 } // namespace detail
@@ -31,7 +21,7 @@ enum class ArchiveMode {
 
 template <class InputStream = MemoryInputStream, 
     class Version = uint64_t, 
-    ArchiveMode mode = ArchiveMode::kCompact>
+    ArchiveMode kMode = ArchiveMode::kCompact>
 class BinaryInputArchive {
 public:
     BinaryInputArchive(InputStream& istream) : istream_{ istream }, memory_runtime_{ nullptr }, version_{ 0 } { }
@@ -43,75 +33,35 @@ public:
         }
     }
 
-    template <class T, class DecayT = std::decay_t<T>>
+    template <class T>
     T Load() {
-        if constexpr (detail::deserialize_accept<BinaryInputArchive, DecayT>) {
-            DecayT res{};
-            res.Deserialize(*this);
-            return res;
-        }
+        T res{};
         // 可直接内存复制的类型
-        else if constexpr (mode == ArchiveMode::kRaw && std::is_trivially_copyable_v<DecayT>) {
-            DecayT res{};
-            istream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
+        if constexpr (
+            (kMode == ArchiveMode::kRaw && std::is_trivially_copyable_v<T>) ||
+            (sizeof(T) == 1))
+        {
+            istream_.read(reinterpret_cast<char*>(&res), sizeof(T));
             if (istream_.fail()) {
                 throw std::runtime_error("input stream read fail.");
             }
-            return res;
-        }
-        else if constexpr (sizeof(DecayT) == 1) {
-            DecayT res{};
-            istream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
-            if (istream_.fail()) {
-                throw std::runtime_error("input stream read fail.");
-            }
-            return res;
-        }
-        else if constexpr (std::is_integral_v<DecayT>) {
-            int64_t res;
-            if constexpr (std::is_signed_v<DecayT>) {
-                size_t len = detail::ZigzagDecode(&res, &istream_);
-                return res;
-            }
-            else {
-                size_t len = detail::VarintDecode(&res, &istream_);
-                return static_cast<uint64_t>(res);
-            }
-        }
-        else if constexpr (std::is_floating_point_v<DecayT>) {
-            DecayT res;
-            istream_.read(reinterpret_cast<char*>(&res), sizeof(DecayT));
-            if (istream_.fail()) {
-                throw std::runtime_error("input stream read fail.");
-            }
-            if constexpr (std::endian::native == std::endian::big) {
-                // Small endings are more common, so we will convert large endings to small endings
-                res = detail::RevereseByte(res);
-            }
-            else if constexpr (std::endian::native != std::endian::little) {
-                static_assert(detail::error_type_v<T>, "Unsupported byte order!");
-            }
-            return res;
-            //static_assert(detail::error_type_v<T>, "This type of floating-point number cannot be deserialized!");
         }
         else {
-            return Deserialize<T>(*this);
-            //printf("types that cannot be deserialized: %s\n", typeid(T).name()); throw;
-            //static_assert(detail::error_type_v<T>, "types that cannot be deserialized.");
+            DeserializeTo(*this, &res);
         }
+        return res;
     }
 
-    template <class T, class... Types, class DecayT = std::decay_t<T>>
-    void Load(T& buf, Types&... bufs) {
-        buf = Load<DecayT>();
-        (Load(bufs), ...);
+    template <class... Types>
+    void Load(Types&&... bufs) {
+        ((bufs = Load<Types>()), ...);
     }
 
-    InputStream& GetInputStream() {
+    InputStream& istream() {
         return istream_;
     }
 
-    detail::MemoryRuntime*& GetMemoryRuntime() {
+    detail::MemoryRuntime*& memory_runtime() {
         return memory_runtime_;
     }
 
@@ -126,7 +76,7 @@ public:
         version_ = Load<Version>();
     }
 
-    const Version& GetVersion() const noexcept {
+    const Version& version() const noexcept {
         return version_;
     }
 
@@ -138,7 +88,7 @@ private:
 
 template <class OutputStream = MemoryOutputStream,
     class Version = uint64_t,
-    ArchiveMode mode = ArchiveMode::kCompact>
+    ArchiveMode kMode = ArchiveMode::kCompact>
 class BinaryOutputArchive {
 public:
     BinaryOutputArchive(OutputStream& ostream) : ostream_{ ostream }, memory_runtime_{ nullptr }, version_{ 0 } {  }
@@ -153,59 +103,28 @@ public:
 
 
     template <class T>
-    void Save(T&& val) {
-        using DecayT = std::decay_t<T>;
-        if constexpr (detail::serialize_accept<BinaryOutputArchive, DecayT>) {
-            val.Serialize(*this);
-        }
-        else if constexpr (mode == ArchiveMode::kRaw && std::is_trivially_copyable_v<DecayT>) {
-            ostream_.write(reinterpret_cast<char*>(&val), sizeof(DecayT));
-        }
-        else if constexpr (sizeof(val) == 1) {
-            ostream_.write(reinterpret_cast<char*>(&val), sizeof(val));
-        }
-        else if constexpr (std::is_integral_v<DecayT>) {
-            if constexpr (std::is_signed_v<DecayT>) {
-                uint8_t buf[10];
-                size_t len = detail::ZigzagEncoded(val, buf) - buf;
-                ostream_.write(reinterpret_cast<char*>(buf), len);
-            }
-            else {
-                uint8_t buf[10];
-                size_t len = detail::VarintEncoded(val, buf) - buf;
-                ostream_.write(reinterpret_cast<char*>(buf), len);
-            }
-        }
-        else if constexpr (std::is_floating_point_v<DecayT>) {
-            DecayT temp = val;
-
-            if constexpr (std::endian::native == std::endian::big) {
-                // Small endings are more common, so we will convert large endings to small endings
-                temp = detail::RevereseByte(temp);
-            }
-            else if constexpr (std::endian::native != std::endian::little) {
-                static_assert(detail::error_type_v<T>, "Unsupported byte order!");
-            }
-            ostream_.write(reinterpret_cast<char*>(&temp), sizeof(DecayT));
-            //static_assert(detail::error_type_v<T>, "This type of floating-point number cannot be serialized!");
+    void Save(const T& val) {
+        if constexpr (
+            (kMode == ArchiveMode::kRaw && std::is_trivially_copyable_v<T>) ||
+            (sizeof(T) == 1))
+        {
+            ostream_.write(reinterpret_cast<char*>(&val), sizeof(T));
         }
         else {
-            Serialize(*this, std::forward<T>(val));
-            //printf("types that cannot be serialized: %s\n", typeid(T).name()); throw;
-            //static_assert(detail::error_type_v<T>, "types that cannot be serialized.");
+            SerializeTo(*this, val);
         }
     }
 
     template <class... Types>
-    void Save(Types&&... vals) {
-        (Save(std::forward<Types>(vals)), ...);
+    void Save(const Types&... vals) {
+        (Save(vals), ...);
     }
 
-    OutputStream& GetOutputStream() {
+    OutputStream& ostream() {
         return ostream_;
     }
 
-    detail::MemoryRuntime*& GetMemoryRuntime() {
+    detail::MemoryRuntime*& memory_runtime() {
         return memory_runtime_;
     }
 
@@ -221,7 +140,7 @@ public:
         Save(version_);
     }
 
-    const Version& GetVersion() const noexcept {
+    const Version& version() const noexcept {
         return version_;
     }
 
@@ -232,6 +151,66 @@ private:
 };
 
 
+template <std::integral T>
+struct Serializer<T> {
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const T& val) const {
+        if constexpr (std::is_signed_v<T>) {
+            uint8_t buf[10];
+            size_t len = detail::ZigzagEncoded(val, buf) - buf;
+            ar.ostream().write(reinterpret_cast<char*>(buf), len);
+        }
+        else {
+            uint8_t buf[10];
+            size_t len = detail::VarintEncoded(val, buf) - buf;
+            ar.ostream().write(reinterpret_cast<char*>(buf), len);
+        }
+    }
+
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, T* out) const {
+        int64_t tmp{};
+        if constexpr (std::is_signed_v<T>) {
+            detail::ZigzagDecode(&tmp, &ar.istream());
+        }
+        else {
+            detail::VarintDecode(&tmp, &ar.istream());
+        }
+        *out = static_cast<T>(tmp);
+    }
+};
+
+template <std::floating_point T>
+struct Serializer<T> {
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const T& val) const {
+        auto tmp = val;
+
+        if constexpr (std::endian::native == std::endian::big) {
+            // Small endings are more common, so we will convert large endings to small endings
+            tmp = detail::RevereseByte(tmp);
+        }
+        else if constexpr (std::endian::native != std::endian::little) {
+            static_assert(always_false<T>, "Unsupported byte order!");
+        }
+        ar.ostream().write(reinterpret_cast<char*>(&tmp), sizeof(T));
+    }
+
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, T* out) const {
+        ar.istream().read(reinterpret_cast<char*>(out), sizeof(T));
+        if (ar.istream().fail()) {
+            throw std::runtime_error("input stream read fail.");
+        }
+        if constexpr (std::endian::native == std::endian::big) {
+            // Small endings are more common, so we will convert large endings to small endings
+            out = detail::RevereseByte(out);
+        }
+        else if constexpr (std::endian::native != std::endian::little) {
+            static_assert(always_false<T>, "Unsupported byte order!");
+        }
+    }
+};
 } // namespace sezz
 
 
