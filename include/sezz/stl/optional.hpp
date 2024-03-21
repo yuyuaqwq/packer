@@ -1,32 +1,34 @@
 #ifndef SEZZ_STL_OPTIONAL_HPP_
 #define SEZZ_STL_OPTIONAL_HPP_
 
-#include <sezz/type_traits.hpp>
+#include <sezz/detail/sezz_decl.hpp>
 #include <optional>
 
 namespace sezz {
+template<typename T>
+struct Serializer<std::optional<T>> {
 
-template <class Archive, class T>
-    requires detail::is_same_template_v<std::decay_t<T>, std::optional<detail::place_t>>
-void Serialize(Archive& ar, T& val) {
-    bool has_value = val.has_value();
-    ar.Save(has_value);
-    if (has_value) {
-        ar.Save(val.value());
+    using Optional = std::optional<T>;
+
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const Optional& val) const {
+        bool has_value = val.has_value();
+        ar.Save(has_value);
+        if (has_value) {
+            ar.Save(val.value());
+        }
     }
-}
 
-template <class T, class Archive, class DecayT = std::decay_t<T>>
-    requires detail::is_same_template_v<DecayT, std::optional<detail::place_t>>
-T Deserialize(Archive& ar) {
-    bool has_value = ar.Load<bool>();
-    if (has_value) {
-        return ar.Load<typename DecayT::value_type>();
-    } else {
-        return std::nullopt;
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, Optional* out) const {
+        if (ar.Load<bool>()) {
+            *out = ar.Load<T>();
+        }
+        else {
+            *out = std::nullopt;
+        }
     }
-}
-
+};
 } // namespace sezz
 
 

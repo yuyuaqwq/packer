@@ -6,8 +6,6 @@
 #include <optional>
 #include <stdexcept>
 
-#include <sezz/type_traits.hpp>
-
 namespace sezz {
 namespace detail {
 

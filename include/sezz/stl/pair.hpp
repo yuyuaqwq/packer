@@ -1,32 +1,28 @@
 #ifndef SEZZ_STL_PAIR_HPP_
 #define SEZZ_STL_PAIR_HPP_
 
+#include <sezz/detail/sezz_decl.hpp>
 #include <utility>
 
-#include <sezz/type_traits.hpp>
-
 namespace sezz {
-    
-template <class Archive, class T>
-    requires detail::is_same_template_v<std::decay_t<T>, std::pair<detail::place_t, detail::place_t>>
-void Serialize(Archive& ar, T&& val) {
-    ar.Save(val.first);
-    ar.Save(val.second);
-}
+template <typename Key, typename Val>
+struct Serializer<std::pair<Key, Val>> {
 
-template <class T, class Archive, class DecayT = std::decay_t<T>>
-    requires detail::is_same_template_v<DecayT, std::pair<detail::place_t, detail::place_t>>
-T Deserialize(Archive& ar) {
-    //DecayT res{};
-    //auto first = ar.Load<typename DecayT::first_type>();
-    //auto second = ar.Load<typename DecayT::second_type>();
-    //::new(&res) DecayT(first, second);
-    //return res;
-    auto first = ar.Load<typename DecayT::first_type>();
-    auto second = ar.Load<typename DecayT::second_type>();
-    return std::make_pair(std::move(first), std::move(second));
-}
+    using Pair = std::pair<Key, Val>;
 
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const Pair& val) const {
+        ar.Save(val.first);
+        ar.Save(val.second);
+    }
+
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, Pair* out) const {
+        auto fst = ar.Load<std::remove_const_t<Key>>();
+        auto sec = ar.Load<Val>();
+        std::construct_at(out, std::move(fst), std::move(sec));
+    }
+};
 } // namespace sezz
 
 

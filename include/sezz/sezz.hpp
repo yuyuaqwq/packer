@@ -108,7 +108,7 @@ public:
             (kMode == ArchiveMode::kRaw && std::is_trivially_copyable_v<T>) ||
             (sizeof(T) == 1))
         {
-            ostream_.write(reinterpret_cast<char*>(&val), sizeof(T));
+            ostream_.write(reinterpret_cast<char*>(const_cast<T*>(&val)), sizeof(T));
         }
         else {
             SerializeTo(*this, val);
