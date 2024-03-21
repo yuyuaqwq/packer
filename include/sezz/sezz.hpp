@@ -53,7 +53,7 @@ public:
     }
 
     template <typename... Types>
-    void Load(Types&&... bufs) {
+    void Load(Types&... bufs) {
         ((bufs = Load<Types>()), ...);
     }
 

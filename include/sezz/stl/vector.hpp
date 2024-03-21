@@ -1,34 +1,36 @@
-#ifndef SEZZ_STL_VECTOR_HPP_
-#define SEZZ_STL_VECTOR_HPP_
+#ifndef SEZZ_STL_STRING_HPP_
+#define SEZZ_STL_STRING_HPP_
 
-#include <sezz/type_traits.hpp>
+#include <sezz/detail/sezz_decl.hpp>
 #include <vector>
 
 namespace sezz {
+template <typename T, typename Alloc>
+struct Serializer<std::vector<T, Alloc>> {
 
-template <class Archive, class T>
-    requires detail::is_same_template_v<std::decay_t<T>, std::vector<detail::place_t>>
-void Serialize(Archive& ar, T& val) {
-    size_t size = val.size();
-    ar.Save(size);
-    for (auto& v : val) {
-        ar.Save(v);
+    using Type = std::vector<T, Alloc>;
+
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const Type& val) const {
+        size_t size = val.size() * sizeof(T);
+        ar.Save(size);
+        ar.ostream().write(val.data(), size);
+        if (ar.ostream().fail()) {
+            throw std::runtime_error("input stream read fail.");
+        }
     }
-}
 
-template <class T, class Archive, class DecayT = std::decay_t<T>>
-    requires detail::is_same_template_v<DecayT, std::vector<detail::place_t>>
-T Deserialize(Archive& ar) {
-    auto size = ar.Load<size_t>();
-    DecayT res;
-    res.reserve(size);
-    for (size_t i = 0; i < size; i++) {
-        res.emplace_back(ar.Load<typename DecayT::value_type>());
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, Type* out) const {
+        auto size = ar.Load<size_t>();
+        out->resize(size / sizeof(T));
+        ar.istream().read(out->data(), size);
+        for (auto& o : out) {
+            std::construct_at(&o, ar.Load<T>());
+        }
     }
-    return res;
-}
-
+};
 } // namespace sezz
 
 
-#endif // SEZZ_STL_VECTOR_HPP_
+#endif // SEZZ_STL_STRING_HPP_

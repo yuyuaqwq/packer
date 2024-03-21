@@ -5,14 +5,14 @@
 #include <string>
 
 namespace sezz {
-template <class Elem, class Traits, class Alloc>
+template <typename Elem, typename Traits, typename Alloc>
 struct Serializer<std::basic_string<Elem, Traits, Alloc>> {
 
     using Type = std::basic_string<Elem, Traits, Alloc>;
 
     template<typename OutputArchive>
     constexpr void Serialize(OutputArchive& ar, const Type& val) const {
-        size_t size = val.size();
+        size_t size = val.size() * sizeof(Elem);
         ar.Save(size);
         ar.ostream().write(val.data(), size);
     }
@@ -20,7 +20,7 @@ struct Serializer<std::basic_string<Elem, Traits, Alloc>> {
     template<typename InputArchive>
     constexpr void Deserialize(InputArchive& ar, Type* out) const {
         auto size = ar.Load<size_t>();
-        out->resize(size + 1, '\0');
+        out->resize(size / sizeof(Elem), '\0');
         ar.istream().read(out->data(), size);
         if (ar.istream().fail()) {
             throw std::runtime_error("input stream read fail.");
