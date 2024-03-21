@@ -1,30 +1,36 @@
 #ifndef SEZZ_STL_TUPLE_HPP_
 #define SEZZ_STL_TUPLE_HPP_
 
+#include <sezz/detail/sezz_decl.hpp>
+#include <cassert>
 #include <tuple>
 
-#include <sezz/type_traits.hpp>
-
 namespace sezz {
+template <typename... Args>
+struct Serializer<std::tuple<Args...>> {
 
-template <class Archive, class T>
-    requires detail::is_same_template_v<std::decay_t<T>, std::tuple<detail::place_t>>
-void Serialize(Archive& ar, T&& val) {
-    std::apply([&](auto&&... args) { 
-        (ar.Save(args), ...); 
-    }, std::forward<T>(val));
-}
+    using Type = std::tuple<Args...>;
+    static constexpr size_t kTupleSize = std::tuple_size_v<Type>;
 
-template <class T, class Archive, class DecayT = std::decay_t<T>>
-    requires detail::is_same_template_v<std::decay_t<T>, std::tuple<detail::place_t>>
-T Deserialize(Archive& ar) {
-    DecayT res{};
-    std::apply([&](auto&... args) { 
-        (ar.Load(args), ...); 
-    }, res);
-    return res;
-}
- 
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const Type& val) const {
+        ar.Save(kTupleSize);
+
+        [&]<size_t... I>(std::index_sequence<I...>) {
+            (ar.Save(std::get<I>(val)), ...);
+        }(std::make_index_sequence<kTupleSize>{});
+    }
+
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, Type* out) const {
+        auto size = ar.Load<size_t>();
+        assert(size == kTupleSize);
+
+        [&]<size_t... I>(std::index_sequence<I...>) {
+            ((std::get<I>(*out) = ar.Load<Args>()), ...);
+        }(std::make_index_sequence<kTupleSize>{});
+    }
+};
 } // namespace sezz
 
 

@@ -8,10 +8,10 @@ namespace sezz {
 template<typename T>
 struct Serializer<std::optional<T>> {
 
-    using Optional = std::optional<T>;
+    using Type = std::optional<T>;
 
     template<typename OutputArchive>
-    constexpr void Serialize(OutputArchive& ar, const Optional& val) const {
+    constexpr void Serialize(OutputArchive& ar, const Type& val) const {
         bool has_value = val.has_value();
         ar.Save(has_value);
         if (has_value) {
@@ -20,7 +20,7 @@ struct Serializer<std::optional<T>> {
     }
 
     template<typename InputArchive>
-    constexpr void Deserialize(InputArchive& ar, Optional* out) const {
+    constexpr void Deserialize(InputArchive& ar, Type* out) const {
         if (ar.Load<bool>()) {
             *out = ar.Load<T>();
         }

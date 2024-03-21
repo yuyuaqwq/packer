@@ -1,26 +1,33 @@
-#ifndef SEZZ_STL_SET_HPP_
-#define SEZZ_STL_SET_HPP_
+#ifndef SEZZ_STL_MAP_HPP_
+#define SEZZ_STL_MAP_HPP_
 
+#include <sezz/detail/sezz_decl.hpp>
 #include <set>
-
-#include <sezz/type_traits.hpp>
-#include <sezz/stl/index.hpp>
+#include <ranges>
 
 namespace sezz {
+template <typename Key, typename Pr, typename Alloc>
+struct Serializer<std::set<Key, Pr, Alloc>> {
 
-template <class Archive, class T>
-    requires detail::is_same_template_v<std::decay_t<T>, std::set<detail::place_t>>
-void Serialize(Archive& ar, T&& val) {
-    SerializeIndex(ar, std::forward<T>(val));
-}
+    using Type = std::set<Key, Pr, Alloc>;
 
-template <class T, class Archive, class DecayT = std::decay_t<T>>
-    requires detail::is_same_template_v<DecayT, std::set<detail::place_t>>
-T Deserialize(Archive& ar) {
-    return DeserializeIndex<DecayT>(ar);
-}
+    template<typename OutputArchive>
+    constexpr void Serialize(OutputArchive& ar, const Type& val) const {
+        ar.Save(val.size());
+        for (auto& v : val) {
+            ar.Save(v);
+        }
+    }
 
+    template<typename InputArchive>
+    constexpr void Deserialize(InputArchive& ar, Type* out) const {
+        auto size = ar.Load<size_t>();
+        for (size_t i = 0; i < size; i++) {
+            out->emplace(ar.Load<std::ranges::range_value_t<Type>>());
+        }
+    }
+};
 } // namespace sezz
 
 
-#endif // SEZZ_STL_SET_HPP_
+#endif // SEZZ_STL_MAP_HPP_

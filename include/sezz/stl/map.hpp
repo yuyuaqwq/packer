@@ -9,10 +9,10 @@ namespace sezz {
 template <typename Key, typename Val, typename Pr, typename Alloc>
 struct Serializer<std::map<Key, Val, Pr, Alloc>> {
 
-    using Map = std::map<Key, Val, Pr, Alloc>;
+    using Type = std::map<Key, Val, Pr, Alloc>;
 
     template<typename OutputArchive>
-    constexpr void Serialize(OutputArchive& ar, const Map& val) const {
+    constexpr void Serialize(OutputArchive& ar, const Type& val) const {
         ar.Save(val.size());
         for (auto& v : val) {
             ar.Save(v);
@@ -20,10 +20,10 @@ struct Serializer<std::map<Key, Val, Pr, Alloc>> {
     }
 
     template<typename InputArchive>
-    constexpr void Deserialize(InputArchive& ar, Map* out) const {
+    constexpr void Deserialize(InputArchive& ar, Type* out) const {
         auto size = ar.Load<size_t>();
         for (size_t i = 0; i < size; i++) {
-            out->emplace(ar.Load<std::ranges::range_value_t<Map>>());
+            out->emplace(ar.Load<std::ranges::range_value_t<Type>>());
         }
     }
 };
