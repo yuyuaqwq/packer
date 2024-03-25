@@ -1,14 +1,10 @@
 #pragma once
 #include <concepts>
+#include <packer/detail/concept.hpp>
 #include <packer/detail/structure_binding.hpp>
 #include <packer/detail/output_buffer.hpp>
 
 namespace packer {
-template <typename T>
-inline constexpr bool kAlwaysFalse = false;
-template <typename T, typename... Types>
-concept AnyOf = (std::is_same_v<T, Types> || ...);
-
 template <typename T>
 struct Packer {};
 
@@ -16,28 +12,14 @@ namespace detail {
 template <typename T>
 struct BuiltInPacker {};
 
-template <typename T, typename ContextType>
-concept HasImplBuiltInSerialize = requires(T & t, ContextType & ctx) {
-	std::declval<BuiltInPacker<T>>().Serialize(t, ctx);
-};
-template <typename T, typename ContextType>
-concept HasImplSerialize = requires(T & t, ContextType & ctx) {
-	std::declval<Packer<T>>().Serialize(t, ctx);
-};
-
-template <typename T, typename ContextType>
-concept HasImplBuiltInDeserialize = requires(T* t, ContextType & ctx) {
-	std::declval<BuiltInPacker<T>>().Deserialize(t, ctx);
-};
-template <typename T, typename ContextType>
-concept HasImplDeserialize = requires(T* t, ContextType & ctx) {
-	std::declval<Packer<T>>().Deserialize(t, ctx);
-};
-
 template <typename Iter>
 class BasicContext {
 public:
 	using Iterator = Iter;
+	template <typename T>
+	using BuiltInPackerType = BuiltInPacker<T>;
+	template <typename T>
+	using PackerType = Packer<T>;
 
 	BasicContext(Iter iter) : iter_{ std::move(iter) } {}
 
