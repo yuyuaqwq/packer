@@ -1,6 +1,8 @@
 #pragma once
 #include <concepts>
+#include <packer/detail/algorithm.hpp>
 #include <packer/detail/concept.hpp>
+#include <packer/detail/context.hpp>
 #include <packer/detail/structure_binding.hpp>
 #include <packer/detail/output_buffer.hpp>
 
@@ -11,29 +13,6 @@ struct Packer {};
 namespace detail {
 template <typename T>
 struct BuiltInPacker {};
-
-template <typename Iter>
-class BasicContext {
-public:
-	using Iterator = Iter;
-	template <typename T>
-	using BuiltInPackerType = BuiltInPacker<T>;
-	template <typename T>
-	using PackerType = Packer<T>;
-
-	BasicContext(Iter iter) : iter_{ std::move(iter) } {}
-
-	Iterator iter() {
-		return std::move(iter_);
-	}
-
-	void advance_to(Iterator iter) {
-		iter_ = std::move(iter);
-	}
-
-private:
-	Iter iter_;
-};
 
 template <typename T, typename ContextType>
 void SerializeImpl(const T& val, ContextType& ctx) {
@@ -87,15 +66,38 @@ template <AnyOf<char, unsigned char> T>
 struct BuiltInPacker<T> {
 	template<typename OutputContext>
 	void Serialize(const T& val, OutputContext& ctx) {
-		auto it = ctx.iter();
-		*it++ = val;
-		ctx.advance_to(it);
+		ContextWriteByte(ctx, val);
 	}
 	template<typename InputContext>
-	void Deserialize(T* val, InputContext& ctx) {
+	void Deserialize(T* res, InputContext& ctx) {
+		*res = ContextReadByte(ctx);
+	}
+};
+
+template <std::integral T>
+requires (sizeof(T) > 2)
+struct BuiltInPacker<T> {
+	template<typename OutputContext>
+	void Serialize(const T& val, OutputContext& ctx) {
+		uint8_t buf[10];
+		size_t len;
+		if constexpr (std::is_signed_v<T>)
+			len = detail::ZigzagEncoded(val, buf) - buf;
+		else
+			len = detail::VarintEncoded(val, buf) - buf;
+		ContextWrite(ctx, buf, buf + len);
+	}
+
+	template<typename InputContext>
+	void Deserialize(T* res, InputContext& ctx) {
+		int64_t tmp;
 		auto it = ctx.iter();
-		*val = *it++;
+		if constexpr (std::is_signed_v<T>)
+			it = detail::ZigzagDecode(&tmp, it);
+		else
+			it = detail::VarintDecode(&tmp, it);
 		ctx.advance_to(it);
+		*res = static_cast<T>(tmp);
 	}
 };
 }
