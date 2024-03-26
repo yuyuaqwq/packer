@@ -11,12 +11,10 @@ struct Packer {};
 
 //template <typename T>
 //struct Packer<T> {
-//	template<typename OutputContext>
-//	void Serialize(const T& val, OutputContext& ctx) {
+//	void Serialize(const T& val, auto& ctx) {
 //	}
 //
-//	template<typename InputContext>
-//	void Deserialize(T* res, InputContext& ctx) {
+//	void Deserialize(T* res, auto& ctx) {
 //	}
 //};
 
@@ -74,12 +72,11 @@ void DeserializeTo(InputIt it, T* res) {
 namespace detail {
 template <AnyOf<char, unsigned char> T>
 struct BuiltInPacker<T> {
-	template<typename OutputContext>
-	void Serialize(const T& val, OutputContext& ctx) {
+	void Serialize(const T& val, auto& ctx) {
 		ContextWriteByte(val, ctx);
 	}
-	template<typename InputContext>
-	void Deserialize(T* res, InputContext& ctx) {
+
+	void Deserialize(T* res, auto& ctx) {
 		*res = ContextReadByte(ctx);
 	}
 };
@@ -87,8 +84,7 @@ struct BuiltInPacker<T> {
 template <std::integral T>
 requires (sizeof(T) > 2)
 struct BuiltInPacker<T> {
-	template<typename OutputContext>
-	void Serialize(const T& val, OutputContext& ctx) {
+	void Serialize(const T& val, auto& ctx) {
 		auto it = ctx.iter();
 		if constexpr (std::is_signed_v<T>)
 			it = ZigzagEncoded(val, it);
@@ -97,8 +93,7 @@ struct BuiltInPacker<T> {
 		ctx.advance_to(it);
 	}
 
-	template<typename InputContext>
-	void Deserialize(T* res, InputContext& ctx) {
+	void Deserialize(T* res, auto& ctx) {
 		int64_t tmp;
 		auto it = ctx.iter();
 		if constexpr (std::is_signed_v<T>)
@@ -114,8 +109,7 @@ template <std::floating_point T>
 struct BuiltInPacker<T> {
 	static_assert(std::endian::native == std::endian::big || std::endian::native == std::endian::little);
 
-	template<typename OutputContext>
-	void Serialize(const T& val, OutputContext& ctx) {
+	void Serialize(const T& val, auto& ctx) {
 		T tmp = val;
 		if constexpr (std::endian::native == std::endian::big) {
 			tmp = RevereseByte(tmp);
@@ -123,8 +117,7 @@ struct BuiltInPacker<T> {
 		ContextWriteValue(tmp, ctx);
 	}
 
-	template<typename InputContext>
-	void Deserialize(T* res, InputContext& ctx) {
+	void Deserialize(T* res, auto& ctx) {
 		T tmp;
 		tmp = ContextReadValue<T>(ctx);
 		if constexpr (std::endian::native == std::endian::big) {
@@ -138,18 +131,31 @@ template <std::ranges::input_range T>
 struct BuiltInPacker<T> {
 	using Value = std::ranges::range_value_t<T>;
 
-	template<typename OutputContext>
-	void Serialize(const T& val, OutputContext& ctx) {
+	void Serialize(const T& val, auto& ctx) {
 		size_t size = std::size(val);
 		ContextWriteValue(size, ctx);
+		if constexpr (AnyOf<Value, char, unsigned char> && std::ranges::random_access_range<T>) {
+			if constexpr (requires(T & t) { t.data(); }) {
+				auto data = val.data();
+				ContextWrite(data, data + size, ctx);
+				return;
+			}
+		}
 		for (auto& elem : val) {
 			SerializeImpl(elem, ctx);
 		}
 	}
 
-	template<typename InputContext>
-	void Deserialize(T* res, InputContext& ctx) {
+	void Deserialize(T* res, auto& ctx) {
 		auto size = ContextReadValue<size_t>(ctx);
+
+		if constexpr (AnyOf<Value, char, unsigned char> && std::ranges::random_access_range<T>) {
+			if constexpr (requires(T & t) { t.data(); }) {
+				res->resize(size * sizeof(Value));
+				ContextRead(res->begin(), res->end(), ctx);
+				return;
+			}
+		}
 		Value tmp;
 		for (size_t i = 0; i < size; i++) {
 			DeserializeImpl(&tmp, ctx);

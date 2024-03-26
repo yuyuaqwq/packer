@@ -10,6 +10,8 @@ struct AnyType {
 
 template <typename T>
 consteval size_t CountMember(auto&&... Args) {
+	static_assert(sizeof...(Args) < 64, "This type cannot be structured binding!");
+
 	if constexpr (!requires { T{ Args... }; }) {
 		return sizeof...(Args) - 1;
 	}
@@ -26,7 +28,6 @@ template <typename T, typename Visitor>
 constexpr decltype(auto) inline StructureBinding(T&& obj, Visitor&& visitor) {
 	using Type = std::remove_cvref_t<T>;
 	constexpr auto count = kMemberCount<Type>;
-	static_assert(count < 64);
 
 	if constexpr (count == 0) {
 		return visitor();
