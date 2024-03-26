@@ -1,7 +1,6 @@
 #pragma once
 #include <concepts>
 #include <packer/detail/algorithm.hpp>
-#include <packer/detail/concept.hpp>
 #include <packer/detail/context.hpp>
 #include <packer/detail/structure_binding.hpp>
 #include <packer/detail/output_buffer.hpp>
@@ -62,14 +61,14 @@ void DeserializeImpl(T* res, ContextType& ctx) {
 template <std::output_iterator<const char&> OutputIt, typename T>
 OutputIt SerializeTo(OutputIt it, const T& val) {
 	detail::OutputBuffer<OutputIt, char> buffer{std::move(it)};
-	detail::BasicContext ctx{std::back_insert_iterator{ buffer }};
+	detail::BasicOutputContext ctx{std::back_insert_iterator{ buffer }};
 	detail::SerializeImpl(val, ctx);
 	return buffer.out();
 }
 
 template <std::input_iterator InputIt, typename T>
 void DeserializeTo(InputIt it, T* res) {
-	detail::BasicContext ctx{it};
+	detail::BasicInputContext ctx{it};
 	detail::DeserializeImpl(res, ctx);
 }
 
