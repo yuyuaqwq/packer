@@ -9,7 +9,6 @@ struct AnyType {
 };
 
 template <typename T>
-requires std::is_trivial_v<T>
 consteval size_t CountMember(auto&&... Args) {
 	if constexpr (!requires { T{ Args... }; }) {
 		return sizeof...(Args) - 1;
@@ -22,14 +21,12 @@ consteval size_t CountMember(auto&&... Args) {
 template <typename T>
 inline constexpr size_t kMemberCount = CountMember<T>();
 
-template<typename T>
-concept StructurellyBindable = std::is_trivial_v<T> && !std::is_integral_v<T> && !std::is_floating_point_v<T> && !std::is_pointer_v<T> && !std::is_null_pointer_v<T>;
 
 template <typename T, typename Visitor>
 constexpr decltype(auto) inline StructureBinding(T&& obj, Visitor&& visitor) {
 	using Type = std::remove_cvref_t<T>;
 	constexpr auto count = kMemberCount<Type>;
-	//static_assert(count < 64);
+	static_assert(count < 64);
 
 	if constexpr (count == 0) {
 		return visitor();

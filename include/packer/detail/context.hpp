@@ -91,7 +91,7 @@ void ContextWrite(InIt beg, InIt end, Context& ctx) {
 }
 
 template <InputContextConcept Context, std::output_iterator<const char&> OutIt>
-void ContextRead(Context& ctx, OutIt beg, OutIt end) {
+void ContextRead(OutIt beg, OutIt end, Context& ctx) {
 	auto src_it = ctx.iter();
 	for (; beg != end; ++beg, ++src_it) {
 		*beg = *src_it;
@@ -136,7 +136,7 @@ T ContextReadValue(Context& ctx) {
 	else {
 		T res;
 		auto buf = reinterpret_cast<char*>(&res);
-		ContextRead(ctx, buf, buf + sizeof(T));
+		ContextRead(buf, buf + sizeof(T), ctx);
 		return res;
 	}
 }

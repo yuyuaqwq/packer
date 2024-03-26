@@ -18,7 +18,7 @@ struct Packer {};
 //	template<typename InputContext>
 //	void Deserialize(T* res, InputContext& ctx) {
 //	}
-//}
+//};
 
 namespace detail {
 template <typename T>
@@ -30,30 +30,28 @@ void SerializeImpl(const T& val, ContextType& ctx) {
 		Packer<T>{}.Serialize(val, ctx);
 	else if constexpr (HasImplBuiltInSerialize<T, ContextType>)
 		BuiltInPacker<T>{}.Serialize(val, ctx);
-	else if constexpr (StructurellyBindable<T>) {
+	else {
 		StructureBinding(val, [&]<typename... Members>(Members&&... members) {
 			(SerializeImpl(members, ctx), ...);
 		});
 	}
-	else
-		static_assert(kAlwaysFalse<T>, "You haven't specialized the Packer::Serialize for this type T yet!");
 }
 
 template <typename T, typename ContextType>
 void DeserializeImpl(T* res, ContextType& ctx) {
 	using Type = std::remove_cvref_t<T>;
 
+	auto noconst_res = const_cast<Type*>(res);
+
 	if constexpr (HasImplDeserialize<Type, ContextType>)
-		Packer<Type>{}.Deserialize(res, ctx);
+		Packer<Type>{}.Deserialize(noconst_res, ctx);
 	else if constexpr (HasImplBuiltInDeserialize<Type, ContextType>)
-		BuiltInPacker<Type>{}.Deserialize(res, ctx);
-	else if constexpr (StructurellyBindable<Type>) {
-		StructureBinding(*res, [&]<typename... Members>(Members&&... members) {
+		BuiltInPacker<Type>{}.Deserialize(noconst_res, ctx);
+	else {
+		StructureBinding(*noconst_res, [&]<typename... Members>(Members&&... members) {
 			(DeserializeImpl(std::addressof(members), ctx), ...);
 		});
 	}
-	else
-		static_assert(kAlwaysFalse<T>, "You haven't specialized the Packer::Deserialize for this type T yet!");
 }
 }	// namespace detail
 
@@ -114,6 +112,8 @@ struct BuiltInPacker<T> {
 
 template <std::floating_point T>
 struct BuiltInPacker<T> {
+	static_assert(std::endian::native == std::endian::big || std::endian::native == std::endian::little);
+
 	template<typename OutputContext>
 	void Serialize(const T& val, OutputContext& ctx) {
 		T tmp = val;
@@ -131,6 +131,41 @@ struct BuiltInPacker<T> {
 			tmp = RevereseByte(tmp);
 		}
 		*res = tmp;
+	}
+};
+
+template <std::ranges::input_range T>
+struct BuiltInPacker<T> {
+	using Value = std::ranges::range_value_t<T>;
+
+	template<typename OutputContext>
+	void Serialize(const T& val, OutputContext& ctx) {
+		size_t size = std::size(val);
+		ContextWriteValue(size, ctx);
+		for (auto& elem : val) {
+			SerializeImpl(elem, ctx);
+		}
+	}
+
+	template<typename InputContext>
+	void Deserialize(T* res, InputContext& ctx) {
+		auto size = ContextReadValue<size_t>(ctx);
+		Value tmp;
+		for (size_t i = 0; i < size; i++) {
+			DeserializeImpl(&tmp, ctx);
+			if constexpr (requires(T & t) { t.emplace_back(std::declval<Value>()); }) {
+				res->emplace_back(tmp);
+			}
+			else if constexpr (requires(T & t) { t.emplace(std::declval<Value>()); }) {
+				res->emplace(tmp);
+			}
+			else if constexpr (requires(T & t) { t.push_back(std::declval<Value>()); }) {
+				res->push_back(tmp);
+			}
+			else {
+				static_assert(kAlwaysFalse<T>);
+			}
+		}
 	}
 };
 }
