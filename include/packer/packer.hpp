@@ -10,6 +10,17 @@ namespace packer {
 template <typename T>
 struct Packer {};
 
+//template <typename T>
+//struct Packer<T> {
+//	template<typename OutputContext>
+//	void Serialize(const T& val, OutputContext& ctx) {
+//	}
+//
+//	template<typename InputContext>
+//	void Deserialize(T* res, InputContext& ctx) {
+//	}
+//}
+
 namespace detail {
 template <typename T>
 struct BuiltInPacker {};
@@ -31,11 +42,13 @@ void SerializeImpl(const T& val, ContextType& ctx) {
 
 template <typename T, typename ContextType>
 void DeserializeImpl(T* res, ContextType& ctx) {
-	if constexpr (HasImplDeserialize<T, ContextType>)
-		Packer<T>{}.Deserialize(res, ctx);
-	else if constexpr (HasImplBuiltInDeserialize<T, ContextType>)
-		BuiltInPacker<T>{}.Deserialize(res, ctx);
-	else if constexpr (StructurellyBindable<T>) {
+	using Type = std::remove_cvref_t<T>;
+
+	if constexpr (HasImplDeserialize<Type, ContextType>)
+		Packer<Type>{}.Deserialize(res, ctx);
+	else if constexpr (HasImplBuiltInDeserialize<Type, ContextType>)
+		BuiltInPacker<Type>{}.Deserialize(res, ctx);
+	else if constexpr (StructurellyBindable<Type>) {
 		StructureBinding(*res, [&]<typename... Members>(Members&&... members) {
 			(DeserializeImpl(std::addressof(members), ctx), ...);
 		});
@@ -66,7 +79,7 @@ template <AnyOf<char, unsigned char> T>
 struct BuiltInPacker<T> {
 	template<typename OutputContext>
 	void Serialize(const T& val, OutputContext& ctx) {
-		ContextWriteByte(ctx, val);
+		ContextWriteByte(val, ctx);
 	}
 	template<typename InputContext>
 	void Deserialize(T* res, InputContext& ctx) {
@@ -79,13 +92,12 @@ requires (sizeof(T) > 2)
 struct BuiltInPacker<T> {
 	template<typename OutputContext>
 	void Serialize(const T& val, OutputContext& ctx) {
-		uint8_t buf[10];
-		size_t len;
+		auto it = ctx.iter();
 		if constexpr (std::is_signed_v<T>)
-			len = detail::ZigzagEncoded(val, buf) - buf;
+			it = ZigzagEncoded(val, it);
 		else
-			len = detail::VarintEncoded(val, buf) - buf;
-		ContextWrite(ctx, buf, buf + len);
+			it = VarintEncoded(val, it);
+		ctx.advance_to(it);
 	}
 
 	template<typename InputContext>
@@ -93,11 +105,33 @@ struct BuiltInPacker<T> {
 		int64_t tmp;
 		auto it = ctx.iter();
 		if constexpr (std::is_signed_v<T>)
-			it = detail::ZigzagDecode(&tmp, it);
+			it = ZigzagDecode(&tmp, it);
 		else
-			it = detail::VarintDecode(&tmp, it);
+			it = VarintDecode(&tmp, it);
 		ctx.advance_to(it);
 		*res = static_cast<T>(tmp);
+	}
+};
+
+template <std::floating_point T>
+struct BuiltInPacker<T> {
+	template<typename OutputContext>
+	void Serialize(const T& val, OutputContext& ctx) {
+		T tmp = val;
+		if constexpr (std::endian::native == std::endian::big) {
+			tmp = RevereseByte(tmp);
+		}
+		ContextWriteValue(tmp, ctx);
+	}
+
+	template<typename InputContext>
+	void Deserialize(T* res, InputContext& ctx) {
+		T tmp;
+		tmp = ContextReadValue<T>(ctx);
+		if constexpr (std::endian::native == std::endian::big) {
+			tmp = RevereseByte(tmp);
+		}
+		*res = tmp;
 	}
 };
 }

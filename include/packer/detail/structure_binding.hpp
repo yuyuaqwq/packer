@@ -1,4 +1,5 @@
 #pragma once
+#include <concepts>
 
 namespace packer {
 namespace detail {
@@ -8,6 +9,7 @@ struct AnyType {
 };
 
 template <typename T>
+requires std::is_trivial_v<T>
 consteval size_t CountMember(auto&&... Args) {
 	if constexpr (!requires { T{ Args... }; }) {
 		return sizeof...(Args) - 1;
@@ -21,7 +23,7 @@ template <typename T>
 inline constexpr size_t kMemberCount = CountMember<T>();
 
 template<typename T>
-concept StructurellyBindable = std::is_pod_v<T> && !std::is_integral_v<T> && !std::is_floating_point_v<T> && !std::is_pointer_v<T> && !std::is_null_pointer_v<T>;
+concept StructurellyBindable = std::is_trivial_v<T> && !std::is_integral_v<T> && !std::is_floating_point_v<T> && !std::is_pointer_v<T> && !std::is_null_pointer_v<T>;
 
 template <typename T, typename Visitor>
 constexpr decltype(auto) inline StructureBinding(T&& obj, Visitor&& visitor) {
