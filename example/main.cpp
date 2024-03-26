@@ -5,6 +5,8 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include <unordered_set>
+#include <tuple>
 #include <packer/packer.hpp>
 
 struct MyStruct
@@ -23,13 +25,18 @@ struct MyStruct
 int main() {
     std::ofstream out{"test.txt"};
     std::ostreambuf_iterator iter{out};
-    packer::SerializeTo(iter, MyStruct{ .a = 'a', .b = 'b', .c = 81, .d = 11.45f, .e = {2, 34, 56, -123}, .f = "12343", .g = { {1, "12234"}} });
+    // 这里记得要接收iter, 因为这里的iter是拷贝传递的(你也可以move进去), 然后内部会把操作完的iter返回
+    iter = packer::SerializeTo(iter, MyStruct{ .a = 'a', .b = 'b', .c = 81, .d = 11.45f, .e = {2, 34, 56, -123}, .f = "12343", .g = { {1, "12234"}} });
+    iter = packer::SerializeTo(iter, std::unordered_set<std::string>{"123", "345", "555"});
     out.close();
 
     std::ifstream in{"test.txt"};
     std::istreambuf_iterator in_iter{in};
-    MyStruct kk;
-    packer::DeserializeTo(in_iter, &kk);
+    MyStruct struct_de;
+    std::unordered_set<std::string> set_de;
+    in_iter = packer::DeserializeTo(in_iter, &struct_de);
+    in_iter = packer::DeserializeTo(in_iter, &set_de);
+    in.close();
     return 0;
 }
 //#include <iostream>

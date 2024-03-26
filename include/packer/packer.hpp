@@ -54,6 +54,10 @@ void DeserializeImpl(T* res, ContextType& ctx) {
 }	// namespace detail
 
 
+//TODO SerializeTo支持wchar的OutputIt
+//TODO SerializeTo支持限制OutputIt的Max size
+//TODO SerializeTo当T为array时的特殊处理
+
 template <std::output_iterator<const char&> OutputIt, typename T>
 OutputIt SerializeTo(OutputIt it, const T& val) {
 	detail::OutputBuffer<OutputIt, char> buffer{std::move(it)};
@@ -62,14 +66,20 @@ OutputIt SerializeTo(OutputIt it, const T& val) {
 	return buffer.out();
 }
 
+//TODO DeserializeTo支持wchar的InputIt
+//TODO DeserializeTo支持限制InputIt的Max size
+//TODO DeserializeTo当T为array时的特殊处理
+
 template <std::input_iterator InputIt, typename T>
-void DeserializeTo(InputIt it, T* res) {
+InputIt DeserializeTo(InputIt it, T* res) {
 	detail::BasicInputContext ctx{it};
 	detail::DeserializeImpl(res, ctx);
+	return ctx.iter();
 }
 
 
 namespace detail {
+//TODO BuiltInPacker待处理wchar
 template <AnyOf<char, unsigned char> T>
 struct BuiltInPacker<T> {
 	void Serialize(const T& val, auto& ctx) {
