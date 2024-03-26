@@ -141,14 +141,12 @@ struct BuiltInPacker<T> {
 				return;
 			}
 		}
-		for (auto& elem : val) {
+		for (auto& elem : val)
 			SerializeImpl(elem, ctx);
-		}
 	}
 
 	void Deserialize(T* res, auto& ctx) {
 		auto size = ContextReadValue<size_t>(ctx);
-
 		if constexpr (AnyOf<Value, char, unsigned char> && std::ranges::random_access_range<T>) {
 			if constexpr (requires(T & t) { t.data(); }) {
 				res->resize(size * sizeof(Value));
@@ -159,17 +157,14 @@ struct BuiltInPacker<T> {
 		Value tmp;
 		for (size_t i = 0; i < size; i++) {
 			DeserializeImpl(&tmp, ctx);
-			if constexpr (requires(T & t) { t.emplace_back(std::declval<Value>()); }) {
+			if constexpr (requires(T & t) { t.emplace_back(std::declval<Value>()); })
 				res->emplace_back(tmp);
-			}
-			else if constexpr (requires(T & t) { t.emplace(std::declval<Value>()); }) {
+			else if constexpr (requires(T & t) { t.emplace(std::declval<Value>()); })
 				res->emplace(tmp);
-			}
-			else if constexpr (requires(T & t) { t.push_back(std::declval<Value>()); }) {
+			else if constexpr (requires(T & t) { t.push_back(std::declval<Value>()); })
 				res->push_back(tmp);
-			}
 			else {
-				static_assert(kAlwaysFalse<T>);
+				static_assert(kAlwaysFalse<T>, "Containers using default serialization must implement emplace_back || emplace || push_back functions to support inserting data at the end, or customize serialization!");
 			}
 		}
 	}
