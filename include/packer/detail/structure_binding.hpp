@@ -1,6 +1,7 @@
 #pragma once
 #include <concepts>
 #include <array>
+#include <tuple>
 
 namespace packer {
 namespace detail {
@@ -10,32 +11,46 @@ struct AnyType {
 };
 
 template <typename T>
-consteval size_t CountMember(auto&&... Args) {
-	static_assert(sizeof...(Args) < 64, "This type cannot be structured binding!");
+concept MemberCountable = std::is_aggregate_v<std::remove_cvref_t<T>>;
 
-	if constexpr (!requires { T{ Args... }; }) {
+template <MemberCountable T>
+consteval size_t CountMember(auto&&... Args) {
+	if constexpr (!requires { T{ Args... }; })
 		return sizeof...(Args) - 1;
-	}
-	else {
+	else
 		return CountMember<T>(Args..., AnyType{});
-	}
 }
 
 template <typename T>
-struct BindingCount : std::integral_constant<int, CountMember<T>()> {};
+struct BindingCount : std::integral_constant<size_t, -1> {};
 
 template <typename T, size_t N>
-struct BindingCount<T[N]> : std::integral_constant<int, N> {};
+struct BindingCount<T[N]> : std::integral_constant<size_t, N> {};
 
 template <typename T, size_t N>
-struct BindingCount<std::array<T, N>> : std::integral_constant<int, N> {};
+struct BindingCount<std::array<T, N>> : std::integral_constant<size_t, N> {};
+
+template <typename... Args>
+struct BindingCount<std::tuple<Args...>> : std::integral_constant<size_t, sizeof...(Args)> {};
+
+template <typename T1, typename T2>
+struct BindingCount<std::pair<T1, T2>> : std::integral_constant<size_t, 2> {};
+
+template <MemberCountable T>
+struct BindingCount<T> : std::integral_constant<size_t, CountMember<T>()> {};
+
+template <typename T>
+constexpr size_t kBindingCount = BindingCount<T>::value;
+
+template <typename T>
+concept StructurellyBindable = kBindingCount<T> <= 64;
 
 
 template <typename T, typename Visitor>
 constexpr decltype(auto) inline StructureBinding(T&& obj, Visitor&& visitor) {
 	using Type = std::remove_cvref_t<T>;
-	constexpr auto count = BindingCount<Type>::value;
-	static_assert(count < 64, "This type cannot be structured binding, or it has more than 64 member variables!");
+	static_assert(StructurellyBindable<Type>, "This type cannot be structured binding!");
+	constexpr auto count = kBindingCount<Type>;
 
 	if constexpr (count == 0) {
 		return visitor();

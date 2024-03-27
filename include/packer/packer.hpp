@@ -42,10 +42,17 @@ void DeserializeImpl(T* res, ContextType& ctx) {
 
 template <std::output_iterator<const char&> OutputIt, typename T>
 OutputIt SerializeTo(OutputIt it, const T& val) {
-	detail::OutputBuffer<OutputIt, char> buffer{std::move(it)};
-	detail::BasicOutputContext ctx{std::back_insert_iterator{ buffer }};
-	detail::SerializeImpl(val, ctx);
-	return buffer.out();
+	if constexpr (std::is_same_v<OutputIt, detail::OutputBufferIterator>) {
+		detail::BasicOutputContext ctx{it};
+		detail::SerializeImpl(val, ctx);
+		return it;
+	}
+	else {
+		detail::OutputBuffer<OutputIt, char> buffer{std::move(it)};
+		detail::BasicOutputContext ctx{detail::OutputBufferIterator{ buffer }};
+		detail::SerializeImpl(val, ctx);
+		return buffer.out();
+	}
 }
 
 //TODO DeserializeToÖ§³ÖwcharµÄInputIt

@@ -90,5 +90,7 @@ private:
 	OutputIt out_;
 	T buffer_[kOutputBufferSize];
 };
+
+using OutputBufferIterator = std::back_insert_iterator<BasicOutputBuffer<char>>;
 }
 }
