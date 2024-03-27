@@ -1,5 +1,6 @@
 #pragma once
 #include <concepts>
+#include <array>
 
 namespace packer {
 namespace detail {
@@ -21,13 +22,20 @@ consteval size_t CountMember(auto&&... Args) {
 }
 
 template <typename T>
-inline constexpr size_t kMemberCount = CountMember<T>();
+struct BindingCount : std::integral_constant<int, CountMember<T>()> {};
+
+template <typename T, size_t N>
+struct BindingCount<T[N]> : std::integral_constant<int, N> {};
+
+template <typename T, size_t N>
+struct BindingCount<std::array<T, N>> : std::integral_constant<int, N> {};
 
 
 template <typename T, typename Visitor>
 constexpr decltype(auto) inline StructureBinding(T&& obj, Visitor&& visitor) {
 	using Type = std::remove_cvref_t<T>;
-	constexpr auto count = kMemberCount<Type>;
+	constexpr auto count = BindingCount<Type>::value;
+	static_assert(count < 64, "This type cannot be structured binding, or it has more than 64 member variables!");
 
 	if constexpr (count == 0) {
 		return visitor();

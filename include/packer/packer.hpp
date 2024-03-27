@@ -1,27 +1,14 @@
 #pragma once
 #include <concepts>
+#include <array>
+#include <assert.h>
 #include <packer/detail/algorithm.hpp>
 #include <packer/detail/context.hpp>
 #include <packer/detail/structure_binding.hpp>
 #include <packer/detail/output_buffer.hpp>
 
 namespace packer {
-template <typename T>
-struct Packer {};
-
-//template <typename T>
-//struct Packer<T> {
-//	void Serialize(const T& val, auto& ctx) {
-//	}
-//
-//	void Deserialize(T* res, auto& ctx) {
-//	}
-//};
-
 namespace detail {
-template <typename T>
-struct BuiltInPacker {};
-
 template <typename T, typename ContextType>
 void SerializeImpl(const T& val, ContextType& ctx) {
 	if constexpr (HasImplSerialize<T, ContextType>)
@@ -29,9 +16,7 @@ void SerializeImpl(const T& val, ContextType& ctx) {
 	else if constexpr (HasImplBuiltInSerialize<T, ContextType>)
 		BuiltInPacker<T>{}.Serialize(val, ctx);
 	else {
-		StructureBinding(val, [&]<typename... Members>(Members&&... members) {
-			(SerializeImpl(members, ctx), ...);
-		});
+		static_assert(kAlwaysFalse<T>, "You haven't specialized the Packer::Serialize for this type T yet!");
 	}
 }
 
@@ -46,9 +31,7 @@ void DeserializeImpl(T* res, ContextType& ctx) {
 	else if constexpr (HasImplBuiltInDeserialize<Type, ContextType>)
 		BuiltInPacker<Type>{}.Deserialize(noconst_res, ctx);
 	else {
-		StructureBinding(*noconst_res, [&]<typename... Members>(Members&&... members) {
-			(DeserializeImpl(std::addressof(members), ctx), ...);
-		});
+		static_assert(kAlwaysFalse<T>, "You haven't specialized the Packer::Deserialize for this type T yet!");
 	}
 }
 }	// namespace detail
@@ -56,7 +39,6 @@ void DeserializeImpl(T* res, ContextType& ctx) {
 
 //TODO SerializeTo支持wchar的OutputIt
 //TODO SerializeTo支持限制OutputIt的Max size
-//TODO SerializeTo当T为array时的特殊处理
 
 template <std::output_iterator<const char&> OutputIt, typename T>
 OutputIt SerializeTo(OutputIt it, const T& val) {
@@ -68,7 +50,6 @@ OutputIt SerializeTo(OutputIt it, const T& val) {
 
 //TODO DeserializeTo支持wchar的InputIt
 //TODO DeserializeTo支持限制InputIt的Max size
-//TODO DeserializeTo当T为array时的特殊处理
 
 template <std::input_iterator InputIt, typename T>
 InputIt DeserializeTo(InputIt it, T* res) {
@@ -80,6 +61,21 @@ InputIt DeserializeTo(InputIt it, T* res) {
 
 namespace detail {
 //TODO BuiltInPacker待处理wchar
+template <typename T>
+struct BuiltInPacker {
+	void Serialize(const T& val, auto& ctx) {
+		StructureBinding(val, [&]<typename... Members>(Members&&... members) {
+			(SerializeImpl(members, ctx), ...);
+		});
+	}
+
+	void Deserialize(T* res, auto& ctx) {
+		StructureBinding(*res, [&]<typename... Members>(Members&&... members) {
+			(DeserializeImpl(std::addressof(members), ctx), ...);
+		});
+	}
+};
+
 template <AnyOf<char, unsigned char> T>
 struct BuiltInPacker<T> {
 	void Serialize(const T& val, auto& ctx) {
@@ -88,6 +84,58 @@ struct BuiltInPacker<T> {
 
 	void Deserialize(T* res, auto& ctx) {
 		*res = ContextReadByte(ctx);
+	}
+};
+
+template <typename T, size_t N>
+struct BuiltInPacker<T[N]> {
+	using Type = T[N];
+
+	void Serialize(const Type& val, auto& ctx) {
+		ContextWriteValue(N, ctx);
+		if constexpr (AnyOf<T, char, unsigned char>) {
+			ContextWrite(val, val + N, ctx);
+			return;
+		}
+		for (size_t i = 0; i < N; i++)
+			SerializeImpl(val[N], ctx);
+	}
+
+	void Deserialize(Type* res, auto& ctx) {
+		auto size = ContextReadValue<size_t>(ctx);
+		assert(size == N);
+		if constexpr (AnyOf<T, char, unsigned char>) {
+			ContextRead(*res, *res + N, ctx);
+			return;
+		}
+		for (size_t i = 0; i < N; i++)
+			DeserializeImpl(*res + N, ctx);
+	}
+};
+
+template <typename T, size_t N>
+struct BuiltInPacker<std::array<T, N>> {
+	using Type = std::array<T, N>;
+
+	void Serialize(const Type& val, auto& ctx) {
+		ContextWriteValue(N, ctx);
+		if constexpr (AnyOf<T, char, unsigned char>) {
+			ContextWrite(val.begin(), val.end(), ctx);
+			return;
+		}
+		for (size_t i = 0; i < N; i++)
+			SerializeImpl(val[i], ctx);
+	}
+
+	void Deserialize(Type* res, auto& ctx) {
+		auto size = ContextReadValue<size_t>(ctx);
+		assert(size == N);
+		if constexpr (AnyOf<T, char, unsigned char>) {
+			ContextRead(res->begin(), res->end(), ctx);
+			return;
+		}
+		for (size_t i = 0; i < N; i++)
+			DeserializeImpl(res->data() + i, ctx);
 	}
 };
 
