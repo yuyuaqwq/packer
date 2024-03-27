@@ -14,7 +14,7 @@ template <typename T>
 concept MemberCountable = std::is_aggregate_v<std::remove_cvref_t<T>>;
 
 template <typename T, typename construct_param_t, typename... Args>
-concept Constructable = requires{ T{ Args{}..., construct_param_t{}}; };
+concept Constructable = requires{ T{ {Args{}}..., { construct_param_t{} }}; };
 
 template <MemberCountable T, typename... Args>
 consteval size_t CountMember() {

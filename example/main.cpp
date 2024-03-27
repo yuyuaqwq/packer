@@ -79,9 +79,9 @@ struct BitfieldData
 
 struct Member
 {
-    std::optional<BitfieldData> Bitfield;
     std::string Name;
     size_t Offset;
+    std::optional<BitfieldData> Bitfield;
 };
 
 int main() {
@@ -92,7 +92,7 @@ int main() {
     auto out_it = packer::SerializeTo(std::ostreambuf_iterator{out}, ccc);
     packer::SerializeTo(out_it, MyClass2{ "12312", {1122, 222.9f, 1145141919810ull} });
     packer::SerializeTo(out_it, std::optional<int>{1133});
-    packer::SerializeTo(out_it, Member{});
+    packer::SerializeTo(out_it, Member{ "!2312", 11, {{1, 2}} });
     out.close();
 
     std::ifstream in{"test.txt"};
@@ -103,6 +103,8 @@ int main() {
     packer::DeserializeTo(in_it, &cc222);
     std::optional<int> asdasdasda;
     packer::DeserializeTo(in_it, &asdasdasda);
+    Member mmmmm;
+    packer::DeserializeTo(in_it, &mmmmm);
     in.close();
     return 0;
 }
