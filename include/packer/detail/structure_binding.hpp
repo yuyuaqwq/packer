@@ -13,12 +13,9 @@ struct AnyType {
 template <typename T>
 concept MemberCountable = std::is_aggregate_v<std::remove_cvref_t<T>>;
 
-template <typename T, typename construct_param_t, typename... Args>
-concept Constructable = requires{ T{ {Args{}}..., { construct_param_t{} }}; };
-
 template <MemberCountable T, typename... Args>
 consteval size_t CountMember() {
-	if constexpr (Constructable<T, AnyType, Args...>)
+	if constexpr (requires{ T{ { AnyType{}}, { Args{} }... }; })
 		return CountMember<T, AnyType, Args...>();
 	else
 		return sizeof...(Args);
