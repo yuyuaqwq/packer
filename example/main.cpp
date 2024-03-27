@@ -71,6 +71,18 @@ private:
     std::string ppp;
     std::tuple<int, float, uint64_t> aaaasd;
 };
+struct BitfieldData
+{
+    uint8_t Position;
+    uint8_t Length;
+};
+
+struct Member
+{
+    std::optional<BitfieldData> Bitfield;
+    std::string Name;
+    size_t Offset;
+};
 
 int main() {
     std::ofstream out{"test.txt"};
@@ -80,6 +92,7 @@ int main() {
     auto out_it = packer::SerializeTo(std::ostreambuf_iterator{out}, ccc);
     packer::SerializeTo(out_it, MyClass2{ "12312", {1122, 222.9f, 1145141919810ull} });
     packer::SerializeTo(out_it, std::optional<int>{1133});
+    packer::SerializeTo(out_it, Member{});
     out.close();
 
     std::ifstream in{"test.txt"};
