@@ -6,8 +6,10 @@
 #include <vector>
 #include <map>
 #include <unordered_set>
+#include <optional>
 #include <tuple>
 #include <packer/packer.hpp>
+#include <packer/extension/optional.hpp>
 
 
 
@@ -75,16 +77,19 @@ int main() {
     MyClass ccc;
     ccc.ppp = { .a = 'a', .b = 'b', .c = 81, .d = 11.45f, .e = {2, 34, 56, -123}, .f = "12343", .g = { {1, "12234"}} };
     ccc.jjj = { "1231", "Sdfsd" };
-    packer::SerializeTo(std::ostreambuf_iterator{out}, ccc);
-    packer::SerializeTo(std::ostreambuf_iterator{out}, MyClass2{ "12312", {1122, 222.9f, 1145141919810ull} });
+    auto out_it = packer::SerializeTo(std::ostreambuf_iterator{out}, ccc);
+    packer::SerializeTo(out_it, MyClass2{ "12312", {1122, 222.9f, 1145141919810ull} });
+    packer::SerializeTo(out_it, std::optional<int>{1133});
     out.close();
 
     std::ifstream in{"test.txt"};
     std::istreambuf_iterator in_iter{in};
     MyClass cccppp;
-    packer::DeserializeTo(std::istreambuf_iterator{in}, &cccppp);
+    auto in_it = packer::DeserializeTo(std::istreambuf_iterator{in}, &cccppp);
     MyClass2 cc222;
-    packer::DeserializeTo(std::istreambuf_iterator{in}, &cc222);
+    packer::DeserializeTo(in_it, &cc222);
+    std::optional<int> asdasdasda;
+    packer::DeserializeTo(in_it, &asdasdasda);
     in.close();
     return 0;
 }

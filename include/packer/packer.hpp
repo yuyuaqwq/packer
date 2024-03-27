@@ -1,11 +1,10 @@
 #pragma once
-#include <concepts>
-#include <array>
-#include <assert.h>
 #include <packer/detail/algorithm.hpp>
 #include <packer/detail/context.hpp>
 #include <packer/detail/structure_binding.hpp>
 #include <packer/detail/output_buffer.hpp>
+#include <array>
+#include <assert.h>
 
 namespace packer {
 namespace detail {
@@ -17,7 +16,7 @@ concept HasIntrusiveDeserialize = requires(T t, Context ctx) { t.Deserialize(ctx
 
 template <typename T, typename Context>
 void SerializeImpl(const T& val, Context& ctx) {
-	static_assert(HasImplSerialize<T, Context> && HasIntrusiveSerialize<T, Context>, "There's no need to implement both intrusive and non-intrusive serialization at the same program!");
+	static_assert(!(HasImplSerialize<T, Context> && HasIntrusiveSerialize<T, Context>), "There's no need to implement both intrusive and non-intrusive serialization at the same program!");
 
 	if constexpr (HasImplSerialize<T, Context>)
 		Packer<T>{}.Serialize(val, ctx);
@@ -32,7 +31,7 @@ void SerializeImpl(const T& val, Context& ctx) {
 
 template <typename T, typename Context>
 void DeserializeImpl(T* res, Context& ctx) {
-	static_assert(HasImplDeserialize<T, Context> && HasIntrusiveDeserialize<T, Context>, "There's no need to implement both intrusive and non-intrusive deserialization at the same program!");
+	static_assert(!(HasImplDeserialize<T, Context> && HasIntrusiveDeserialize<T, Context>), "There's no need to implement both intrusive and non-intrusive deserialization at the same program!");
 
 	using Type = std::remove_cvref_t<T>;
 	auto noconst_res = const_cast<Type*>(res);
@@ -95,7 +94,7 @@ struct BuiltInPacker {
 	}
 };
 
-template <AnyOf<char, unsigned char> T>
+template <AnyOf<char, unsigned char, bool> T>
 struct BuiltInPacker<T> {
 	void Serialize(const T& val, auto& ctx) {
 		ContextWriteByte(val, ctx);
@@ -235,11 +234,11 @@ struct BuiltInPacker<T> {
 		for (size_t i = 0; i < size; i++) {
 			DeserializeImpl(&tmp, ctx);
 			if constexpr (requires(T & t) { t.emplace_back(std::declval<Value>()); })
-				res->emplace_back(tmp);
+				res->emplace_back(std::move(tmp));
 			else if constexpr (requires(T & t) { t.emplace(std::declval<Value>()); })
-				res->emplace(tmp);
+				res->emplace(std::move(tmp));
 			else if constexpr (requires(T & t) { t.push_back(std::declval<Value>()); })
-				res->push_back(tmp);
+				res->push_back(std::move(tmp));
 			else {
 				static_assert(kAlwaysFalse<T>, "Containers using default serialization must implement emplace_back || emplace || push_back functions to support inserting data at the end, or customize serialization!");
 			}

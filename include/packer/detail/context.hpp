@@ -1,5 +1,5 @@
 #pragma once
-#include <concepts>
+#include <packer/detail/declaration.hpp>
 
 namespace packer {
 template <typename T>
@@ -7,13 +7,7 @@ inline constexpr bool kAlwaysFalse = false;
 template <typename T, typename... Types>
 concept AnyOf = (std::is_same_v<T, Types> || ...);
 
-template <typename T>
-struct Packer;
-
 namespace detail {
-template <typename T>
-struct BuiltInPacker;
-
 template <typename Iter>
 class BasicContext {
 public:
