@@ -9,26 +9,38 @@
 
 namespace packer {
 namespace detail {
-template <typename T, typename ContextType>
-void SerializeImpl(const T& val, ContextType& ctx) {
-	if constexpr (HasImplSerialize<T, ContextType>)
+template <typename T, typename Context>
+concept HasIntrusiveSerialize = requires(T t, Context ctx) { t.Serialize(ctx); };
+template <typename T, typename Context>
+concept HasIntrusiveDeserialize = requires(T t, Context ctx) { t.Deserialize(ctx); };
+
+
+template <typename T, typename Context>
+void SerializeImpl(const T& val, Context& ctx) {
+	static_assert(HasImplSerialize<T, Context> && HasIntrusiveSerialize<T, Context>, "There's no need to implement both intrusive and non-intrusive serialization at the same program!");
+
+	if constexpr (HasImplSerialize<T, Context>)
 		Packer<T>{}.Serialize(val, ctx);
-	else if constexpr (HasImplBuiltInSerialize<T, ContextType>)
+	else if constexpr (HasIntrusiveSerialize<T, Context>)
+		val.Serialize(ctx);
+	else if constexpr (HasImplBuiltInSerialize<T, Context>)
 		BuiltInPacker<T>{}.Serialize(val, ctx);
 	else {
 		static_assert(kAlwaysFalse<T>, "You haven't specialized the Packer::Serialize for this type T yet!");
 	}
 }
 
-template <typename T, typename ContextType>
-void DeserializeImpl(T* res, ContextType& ctx) {
+template <typename T, typename Context>
+void DeserializeImpl(T* res, Context& ctx) {
+	static_assert(HasImplDeserialize<T, Context> && HasIntrusiveDeserialize<T, Context>, "There's no need to implement both intrusive and non-intrusive deserialization at the same program!");
+
 	using Type = std::remove_cvref_t<T>;
-
 	auto noconst_res = const_cast<Type*>(res);
-
-	if constexpr (HasImplDeserialize<Type, ContextType>)
+	if constexpr (HasImplDeserialize<Type, Context>)
 		Packer<Type>{}.Deserialize(noconst_res, ctx);
-	else if constexpr (HasImplBuiltInDeserialize<Type, ContextType>)
+	else if constexpr (HasIntrusiveDeserialize<Type, Context>)
+		noconst_res->Deserialize(ctx);
+	else if constexpr (HasImplBuiltInDeserialize<Type, Context>)
 		BuiltInPacker<Type>{}.Deserialize(noconst_res, ctx);
 	else {
 		static_assert(kAlwaysFalse<T>, "You haven't specialized the Packer::Deserialize for this type T yet!");

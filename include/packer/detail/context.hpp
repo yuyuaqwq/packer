@@ -47,20 +47,20 @@ template <typename T, typename Context>
 using PackerType = typename Context::template PackerType<T>;
 
 template <typename T, typename Context>
-concept HasImplBuiltInSerialize = requires(T & t, Context & ctx) {
+concept HasImplBuiltInSerialize = requires(T t, Context ctx) {
 	std::declval<BuiltInPackerType<T, Context>>().Serialize(t, ctx);
 };
 template <typename T, typename Context>
-concept HasImplSerialize = requires(T & t, Context & ctx) {
+concept HasImplSerialize = requires(T t, Context ctx) {
 	std::declval<PackerType<T, Context>>().Serialize(t, ctx);
 };
 
 template <typename T, typename Context>
-concept HasImplBuiltInDeserialize = requires(T * t, Context & ctx) {
+concept HasImplBuiltInDeserialize = requires(T * t, Context ctx) {
 	std::declval<BuiltInPackerType<T, Context>>().Deserialize(t, ctx);
 };
 template <typename T, typename Context>
-concept HasImplDeserialize = requires(T * t, Context & ctx) {
+concept HasImplDeserialize = requires(T * t, Context ctx) {
 	std::declval<PackerType<T, Context>>().Deserialize(t, ctx);
 };
 
@@ -76,7 +76,7 @@ template <typename Context>
 using ContextIterator = typename ContextIteratorGetter<Context>::Iterator;
 
 template <typename Context>
-concept BasicContextConcept = requires(Context & ctx) {
+concept BasicContextConcept = requires(Context ctx) {
 	{ctx.iter()} -> std::same_as<ContextIterator<Context>>;
 	ctx.advance_to(std::declval<ContextIterator<Context>>());
 };

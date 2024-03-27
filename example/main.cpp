@@ -37,14 +37,37 @@ public:
 template<>
 struct packer::Packer<MyClass> {
     void Serialize(const MyClass& val, auto& ctx) {
-        SerializeTo(ctx.iter(), val.ppp);
-        SerializeTo(ctx.iter(), val.jjj);
+        packer::SerializeTo(ctx.iter(), val.ppp);
+        packer::SerializeTo(ctx.iter(), val.jjj);
     }
 
     void Deserialize(MyClass* val, auto& ctx) {
-        DeserializeTo(ctx.iter(), &val->ppp);
-        DeserializeTo(ctx.iter(), &val->jjj);
+        packer::DeserializeTo(ctx.iter(), &val->ppp);
+        packer::DeserializeTo(ctx.iter(), &val->jjj);
     }
+};
+
+// 侵入式序列化测试类
+class MyClass2
+{
+public:
+    MyClass2() {}
+    MyClass2(std::string p, std::tuple<int, float, uint64_t> a) : ppp{ p }, aaaasd{ a } {}
+    ~MyClass2() {}
+
+    void Serialize(auto& ctx) const {
+        packer::SerializeTo(ctx.iter(), ppp);
+        packer::SerializeTo(ctx.iter(), aaaasd);
+    }
+
+    void Deserialize(auto& ctx) {
+        packer::DeserializeTo(ctx.iter(), &ppp);
+        packer::DeserializeTo(ctx.iter(), &aaaasd);
+    }
+
+private:
+    std::string ppp;
+    std::tuple<int, float, uint64_t> aaaasd;
 };
 
 int main() {
@@ -53,12 +76,15 @@ int main() {
     ccc.ppp = { .a = 'a', .b = 'b', .c = 81, .d = 11.45f, .e = {2, 34, 56, -123}, .f = "12343", .g = { {1, "12234"}} };
     ccc.jjj = { "1231", "Sdfsd" };
     packer::SerializeTo(std::ostreambuf_iterator{out}, ccc);
+    packer::SerializeTo(std::ostreambuf_iterator{out}, MyClass2{ "12312", {1122, 222.9f, 1145141919810ull} });
     out.close();
 
     std::ifstream in{"test.txt"};
     std::istreambuf_iterator in_iter{in};
     MyClass cccppp;
     packer::DeserializeTo(std::istreambuf_iterator{in}, &cccppp);
+    MyClass2 cc222;
+    packer::DeserializeTo(std::istreambuf_iterator{in}, &cc222);
     in.close();
     return 0;
 }
