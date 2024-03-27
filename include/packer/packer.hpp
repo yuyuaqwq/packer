@@ -4,6 +4,7 @@
 #include <packer/detail/structure_binding.hpp>
 #include <packer/detail/output_buffer.hpp>
 #include <array>
+#include <bit>
 #include <assert.h>
 
 namespace packer {
